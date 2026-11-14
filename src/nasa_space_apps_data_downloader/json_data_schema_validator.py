@@ -204,9 +204,9 @@ def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
             case "OLI-2" | "SNPP":
                 return Enumerable[str].empty()
             case x:
-                return Enumerable(f"Unknown instrument specifier {x}")
+                return Enumerable([f"Unknown instrument specifier {x}"])
     except KeyError:
-        return Enumerable(f"Could not access 'instrument' key on object {object}")
+        return Enumerable([f"Could not access 'instrument' key on object {object}"])
 
     return (
         Enumerable(schema.rows)
