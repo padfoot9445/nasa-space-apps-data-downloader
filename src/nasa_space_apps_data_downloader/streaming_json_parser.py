@@ -13,6 +13,8 @@ def stream_parse(filename: Path, *, chunks: int = 1) -> Iterable[dict[str, Any]]
         for line in Enumerable(file).skip(1):
             if "{" in line:
                 pass
+            elif "]" == line.strip():
+                pass
             elif "}" in line:
                 if current_chunk == chunks:
                     x = f"[{",".join(f"{{{"".join(chunk)}}}" for chunk in buffer)}]"
@@ -28,3 +30,11 @@ def stream_parse(filename: Path, *, chunks: int = 1) -> Iterable[dict[str, Any]]
                     current_chunk += 1
             else:
                 buffer[current_chunk - 1].append(line)
+        for chunk in buffer:
+            if len(chunk) > 0:
+                x = f"{{{"".join(chunk)}}}"
+                try:
+                    yield json.loads(x)
+                except:
+                    print(x)
+                    raise
