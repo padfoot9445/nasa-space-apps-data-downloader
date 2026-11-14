@@ -7,7 +7,7 @@ import sys
 from typing import Any, Callable, cast
 from python_linq import Enumerable
 from pathlib import Path
-from functools import cached_property
+from functools import cache, cached_property
 from .streaming_json_parser import stream_parse
 
 
@@ -27,7 +27,7 @@ class SchemaDataSpecifier:
 
     @cached_property
     def enum_values(self):
-        return set(self.type_args.split(","))
+        return frozenset(self.type_args.split(","))
 
     def validate_data(self, data: Any, **context: Callable[[], str]) -> str | None:
         validation = self._validate_data(data)
@@ -83,6 +83,11 @@ class SchemaDataSpecifier:
                 return None
 
 
+@cache
+def cached_sort_specifiers(specifiers: frozenset[str]) -> list[str]:
+    return sorted(specifiers, key=len, reverse=True)
+
+
 @dataclass
 class VersionSpec:
     version: float
@@ -90,10 +95,10 @@ class VersionSpec:
 
     @classmethod
     def try_parse(
-        cls, version_spec: str, allowed_specifiers: set[str]
+        cls, version_spec: str, allowed_specifiers: frozenset[str]
     ) -> "VersionSpec | str":
         specifier: str | None = None
-        for allowed_specifier in sorted(allowed_specifiers, key=len, reverse=True):
+        for allowed_specifier in cached_sort_specifiers(allowed_specifiers):
             if version_spec.endswith(allowed_specifier):
                 version_spec = version_spec[: -len(allowed_specifier)]
                 specifier = allowed_specifier
