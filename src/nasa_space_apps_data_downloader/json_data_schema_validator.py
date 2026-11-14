@@ -9,7 +9,7 @@ from typing import Any, Callable, Iterable, cast
 from python_linq import Enumerable
 from pathlib import Path
 from functools import cache, cached_property
-from .streaming_json_parser import stream_parse_buffer_by_characters
+from .data_models.streaming_json_parser import stream_parse_buffer_by_characters
 
 
 class SchemaDataType(StrEnum):
