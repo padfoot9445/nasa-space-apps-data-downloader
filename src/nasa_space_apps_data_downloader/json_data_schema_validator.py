@@ -243,9 +243,7 @@ def main():
         for error in (
             Enumerable(sys.argv[1:])
             .map(Path)
-            .map(
-                lambda x: Enumerable(stream_parse_buffer_by_characters(x)).take(100_000)
-            )
+            .map(lambda x: Enumerable(stream_parse_buffer_by_characters(x)))
             .flat_map(
                 lambda x: p.imap_unordered(_validate_object, x, chunksize=100_000 // 16)
             )
