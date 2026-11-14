@@ -73,7 +73,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=2.5.4" },
-    { name = "python-linq", git = "https://github.com/padfoot9445/python-linq.git?rev=82b30736d29010847ec5ec8f19229a93bfb4293e" },
+    { name = "python-linq", git = "https://github.com/padfoot9445/python-linq.git" },
     { name = "rustshed", specifier = ">=0.5.0" },
 ]
 
@@ -173,8 +173,8 @@ wheels = [
 
 [[package]]
 name = "python-linq"
-version = "0.7.0"
-source = { git = "https://github.com/padfoot9445/python-linq.git?rev=82b30736d29010847ec5ec8f19229a93bfb4293e#82b30736d29010847ec5ec8f19229a93bfb4293e" }
+version = "0.8.0"
+source = { git = "https://github.com/padfoot9445/python-linq.git#dc3961a06bebd3ba784b036a2c16d92d277887ee" }
 dependencies = [
     { name = "pytest" },
     { name = "rustshed" },
