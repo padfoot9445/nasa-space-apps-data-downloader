@@ -41,23 +41,14 @@ def stream_parse(filename: Path, *, chunks: int = 1) -> Iterable[dict[str, Any]]
                     raise
 
 
-def split_string_at_object_end(string: str) -> tuple[str, str]:  # object-end, rest
-    if string[-1] == "}":
-        return string, ""
-
-    for i in range(len(string)):
-        if string[-i - 1] == "}":
-            return string[:-i], string[-i:]
-    raise Exception()
-
-
 def stream_parse_buffer_by_characters(
     filename: Path, *, chunksize_chars: int = 50000  # approx 100 objects
 ) -> Iterable[dict[str, Any]]:
     with open(filename, "r", encoding="UTF8") as file:
         last: str = ""
         while (chunk := file.read(chunksize_chars).strip("[]")) != "":
-            data, tlast = split_string_at_object_end(chunk)
+            idx = chunk.rfind("}")
+            data, tlast = chunk[: idx + 1], chunk[idx + 1 :]
             x = f"[{(last + data).strip(",")}]"
 
             try:
