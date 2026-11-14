@@ -36,7 +36,7 @@ def stream_parse(filename: Path, *, chunks: int = 1) -> Iterable[dict[str, Any]]
                 x = f"{{{"".join(chunk)}}}"
                 try:
                     yield json.loads(x)
-                except:
+                except Exception:
                     print(x)
                     raise
 
@@ -53,7 +53,7 @@ def stream_parse_buffer_by_characters(
 
             try:
                 yield from json.loads(x)
-            except:
+            except Exception:
                 print("----    ", x)
                 raise
             last = tlast
