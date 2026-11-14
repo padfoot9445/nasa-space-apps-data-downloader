@@ -1,0 +1,29 @@
+[project]
+name = "nasa-space-apps-data-downloader"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "padfoot9445", email = "yipy214@gmail.com" }
+]
+requires-python = ">=3.15"
+dependencies = [
+    "numpy>=2.5.4",
+    "python-linq",
+    "rustshed>=0.5.0",
+]
+
+[project.scripts]
+nasa-space-apps-data-downloader = "nasa_space_apps_data_downloader:main"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "black>=26.10.1",
+]
+
+[tool.uv.sources]
+python-linq = { git = "https://github.com/padfoot9445/python-linq.git", rev = "82b30736d29010847ec5ec8f19229a93bfb4293e" }

@@ -1,0 +1,14 @@
+Latitude	float 	 	Latitude	Center of 1 km fire pixel, but not necessarily the actual location of the fire as one or more fires can be detected within the 1 km pixel.
+Longitude	float 	 	Longitude	Center of 1 km fire pixel, but not necessarily the actual location of the fire as one or more fires can be detected within the 1 km pixel.
+Brightness	float 	 	Brightness temperature 21 (Kelvin)	Channel 21/22 brightness temperature of the fire pixel measured in Kelvin.
+Scan	float 	 	long Scan pixel size	The algorithm produces 1 km fire pixels, but MODIS pixels get bigger toward the edge of scan. Scan and track reflect actual pixel size.
+Track	float 	 	Along Track pixel size	The algorithm produces 1 km fire pixels, but MODIS pixels get bigger toward the edge of scan. Scan and track reflect actual pixel size.
+Acq_Date	date 	%Y-%m-%d 	Acquisition Date	Data of MODIS acquisition.
+Acq_Time	time 	%H%M 	Acquisition Time	Time of acquisition/overpass of the satellite (in UTC).
+Satellite	enum 	A,T 	Satellite	A = Aqua and T = Terra.
+Confidence	percentage 	 	Confidence (0-100%)	This value is based on a collection of intermediate algorithm quantities used in the detection process. It is intended to help users gauge the quality of individual hotspot/fire pixels. Confidence estimates range between 0 and 100% and are assigned one of the three fire classes (low-confidence fire, nominal-confidence fire, or high-confidence fire).
+Version	versionspec 	URT,RT,NRT 	Version (Collection and source)
+Bright_T31 	float 	 	Brightness temperature 31 (Kelvin)	Channel 31 brightness temperature of the fire pixel measured in Kelvin.
+FRP	float 	 	Fire Radiative Power (MW - megawatts)	Depicts the pixel-integrated fire radiative power in MW (megawatts).
+Type*	enum 	0,1,2,3 	Inferred hot spot type	0 = presumed vegetation fire; 1 = active volcano; 2 = other static land source; 3 = offshore
+DayNight	enum 	D,N 	Day or Night	D= Daytime fire, N= Nighttime fire
