@@ -234,10 +234,7 @@ def main():
         .map(stream_parse)
         .map(Enumerable)
         .flat_map(
-            lambda x: x.take(5)
-            .map(validate_object)
-            .filter(lambda x: x is not None)
-            .cast(str)
+            lambda x: x.map(validate_object).filter(lambda x: x is not None).cast(str)
         )
     ):
         has_error = True
