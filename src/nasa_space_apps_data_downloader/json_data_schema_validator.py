@@ -194,7 +194,7 @@ def return_none(x: str | None, y: str | None) -> str | None:
     raise Exception()
 
 
-def validate_object(object: dict[Any, Any]) -> None | str:
+def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
     try:
         match object["instrument"]:
             case "VIIRS":
@@ -202,13 +202,13 @@ def validate_object(object: dict[Any, Any]) -> None | str:
             case "MODIS":
                 schema = MODIS_SCHEMA
             case "OLI-2" | "SNPP":
-                return None
+                return Enumerable[str].empty()
             case x:
-                return f"Unknown instrument specifier {x}"
+                return Enumerable(f"Unknown instrument specifier {x}")
     except KeyError:
-        return f"Could not access 'instrument' key on object {object}"
+        return Enumerable(f"Could not access 'instrument' key on object {object}")
 
-    errors = (
+    return (
         Enumerable(schema.rows)
         .map(
             lambda row: Enumerable(row.all_names)
@@ -223,12 +223,7 @@ def validate_object(object: dict[Any, Any]) -> None | str:
         )
         .where(lambda x: x is not None)
         .cast(str)
-        .to_list()
     )
-
-    if len(errors) == 0:
-        return None
-    return "\n".join(errors)
 
 
 def main():
@@ -238,9 +233,7 @@ def main():
         .map(Path)
         .map(stream_parse)
         .map(Enumerable)
-        .flat_map(
-            lambda x: x.map(validate_object).filter(lambda x: x is not None).cast(str)
-        )
+        .flat_map(lambda x: x.flat_map(validate_object).cast(str))
     ):
         has_error = True
         print(error)
