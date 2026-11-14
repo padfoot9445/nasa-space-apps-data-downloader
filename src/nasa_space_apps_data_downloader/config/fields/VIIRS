@@ -1,6 +1,6 @@
 Latitude	float		Latitude	Center of nominal 375 m fire pixel
 Longitude	float		Longitude	Center of nominal 375 m fire pixel
-Bright_ti4/Brightness	float		Brightness temperature I-4	VIIRS I-4 channel brightness temperature of the fire pixel measured in Kelvin
+Brightness/Bright_ti4	float		Brightness temperature I-4	VIIRS I-4 channel brightness temperature of the fire pixel measured in Kelvin
 Scan	float		Along Scan pixel size	The algorithm produces approximately 375 m pixels at nadir. Scan and track reflect actual pixel size
 Track	float		Along Track pixel size	The algorithm produces approximately 375 m pixels at nadir. Scan and track reflect actual pixel size
 Acq_Date	date	%Y-%m-%d	Acquisition Date	Date of VIIRS acquisition
