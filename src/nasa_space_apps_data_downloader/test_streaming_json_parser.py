@@ -8,5 +8,7 @@ def test_stream_parse():
         "/home/padfoot9445/Coding/nasa-space-apps-data-downloader/data/DL_FIRE_J1V-C2_847738/fire_archive_J1V-C2_847738.json"
     )
     y = stream_parse(src)
+    i = 0
     for _ in y:
-        pass
+        i += 1
+    print(i)
