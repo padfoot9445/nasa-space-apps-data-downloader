@@ -4,7 +4,7 @@ from enum import Enum, StrEnum
 import enum
 import os
 import sys
-from typing import Any, cast
+from typing import Any, Callable, cast
 from python_linq import Enumerable
 from pathlib import Path
 from functools import cached_property
@@ -29,13 +29,13 @@ class SchemaDataSpecifier:
     def enum_values(self):
         return set(self.type_args.split(","))
 
-    def validate_data(self, data: Any, **context: str) -> str | None:
+    def validate_data(self, data: Any, **context: Callable[[], str]) -> str | None:
         validation = self._validate_data(data)
         if validation is None:
             return validation
 
         context_string = "\n".join(
-            f"\t{k}:\n{"\n".join(f"\t\t{l}" for l in v.splitlines())}"
+            f"\t{k}:\n{"\n".join(f"\t\t{l}" for l in v().splitlines())}"
             for k, v in context.items()
         )
         return f"{validation}\n{context_string}"
@@ -211,7 +211,7 @@ def validate_object(object: dict[Any, Any]) -> None | str:
             .where(lambda x: (not row.optional) or x[1] is not None)
             .map(
                 lambda x: row.type_specifier.validate_data(
-                    x[1], object=str(object), name=x[0]
+                    x[1], object=lambda: str(object), name=lambda: x[0]
                 )
             )
             .aggregate(return_none)
