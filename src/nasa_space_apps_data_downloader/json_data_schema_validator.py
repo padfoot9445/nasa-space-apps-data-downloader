@@ -8,7 +8,7 @@ from typing import Any, Callable, cast
 from python_linq import Enumerable
 from pathlib import Path
 from functools import cache, cached_property
-from .streaming_json_parser import stream_parse
+from .streaming_json_parser import stream_parse_buffer_by_characters
 
 
 class SchemaDataType(StrEnum):
@@ -184,14 +184,19 @@ VIIRS_SCHEMA = Schema.from_path(SensorType.VIIRS, Path(r"config/fields/VIIRS"))
 os.chdir(cwd)
 
 
-def return_none(x: str | None, y: str | None) -> str | None:
-    if isinstance(x, str) and isinstance(y, str):
-        return x
-    elif x is None:
-        return x
-    elif y is None:
-        return y
-    raise Exception()
+def validate_row_name(row: SchemaRow, object: dict[Any, Any]):
+    for name in row.all_names:
+        x = object.get(name)
+        if x is not None:
+            error = row.type_specifier.validate_data(
+                x, object=lambda: str(object), name=lambda: name
+            )
+            return error
+    if not row.optional:
+        return row.type_specifier.validate_data(
+            None, object=lambda: str(object), name=lambda: ",".join(row.all_names)
+        )
+    return None
 
 
 def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
@@ -210,17 +215,7 @@ def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
 
     return (
         Enumerable(schema.rows)
-        .map(
-            lambda row: Enumerable(row.all_names)
-            .map(lambda x: (x, object.get(x)))
-            .where(lambda x: (not row.optional) or x[1] is not None)
-            .map(
-                lambda x: row.type_specifier.validate_data(
-                    x[1], object=lambda: str(object), name=lambda: x[0]
-                )
-            )
-            .aggregate(return_none)
-        )
+        .map(lambda row: validate_row_name(row, object))
         .where(lambda x: x is not None)
         .cast(str)
     )
