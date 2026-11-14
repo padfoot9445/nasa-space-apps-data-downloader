@@ -9,7 +9,8 @@ from typing import Any, Callable, Iterable, cast
 from python_linq import Enumerable
 from pathlib import Path
 from functools import cache, cached_property
-from .data_models.streaming_json_parser import stream_parse_buffer_by_characters
+from ..streaming_json_parser import stream_parse_buffer_by_characters
+from ..._definitions import PROJECT_ROOT
 
 
 class SchemaDataType(StrEnum):
@@ -180,8 +181,10 @@ class Schema:
 
 cwd = os.getcwd()
 os.chdir(Path(__file__).parent)
-MODIS_SCHEMA = Schema.from_path(SensorType.MODIS, Path(r"config/fields/MODIS"))
-VIIRS_SCHEMA = Schema.from_path(SensorType.VIIRS, Path(r"config/fields/VIIRS"))
+MODIS_SCHEMA = Schema.from_path(SensorType.MODIS, PROJECT_ROOT / r"config/schema/MODIS")
+VIIRS_SCHEMA = Schema.from_path(
+    SensorType.VIIRS, PROJECT_ROOT / (r"config/schema/VIIRS")
+)
 os.chdir(cwd)
 
 

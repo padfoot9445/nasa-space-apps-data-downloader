@@ -1,4 +1,5 @@
-lazy from .json_data_schema_validator import main as validator_main
+from pathlib import Path
+lazy from .data_models.schema.json_data_schema_validator import main as validator_main
 
 
 def main() -> None:
