@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import datetime
 from enum import Enum, StrEnum
 import enum
+from multiprocessing import Pool
 import os
 import sys
 from typing import Any, Callable, cast
@@ -221,17 +222,20 @@ def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
     )
 
 
-def main():
+def process_file(path: Path):
     has_error = False
-    for error in (
-        Enumerable(sys.argv[1:])
-        .map(Path)
-        .map(lambda x: stream_parse_buffer_by_characters(x))
-        .map(Enumerable)
-        .flat_map(lambda x: x.flat_map(validate_object).cast(str))
+    for error in Enumerable(stream_parse_buffer_by_characters(path)).flat_map(
+        validate_object
     ):
-        has_error = True
         print(error)
+        has_error = True
+    print(f"finished {path}!")
+    return has_error
+
+
+def main():
+    with Pool() as p:
+        has_error = any(p.map(process_file, map(Path, sys.argv[1:])))
     if not has_error:
         print("No errors!!")
 
