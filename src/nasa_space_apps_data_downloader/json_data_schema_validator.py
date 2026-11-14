@@ -5,7 +5,7 @@ import enum
 import os
 import sys
 from typing import Any, Callable, cast
-from python_linq import ControlFlow, Enumerable
+from python_linq import Enumerable
 from pathlib import Path
 from functools import cache, cached_property
 from .streaming_json_parser import stream_parse
@@ -217,13 +217,6 @@ def validate_object(object: dict[Any, Any]) -> None | str:
             .map(
                 lambda x: row.type_specifier.validate_data(
                     x[1], object=lambda: str(object), name=lambda: x[0]
-                )
-            )
-            .control_flow(
-                lambda x: (
-                    ControlFlow[str | None].stop_ok(x)
-                    if x is None
-                    else ControlFlow[str | None].ok(x)
                 )
             )
             .aggregate(return_none)
