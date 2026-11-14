@@ -20,9 +20,8 @@ def stream_parse(filename: Path, *, chunks: int = 1) -> Iterable[dict[str, Any]]
                     x = f"[{",".join(f"{{{"".join(chunk)}}}" for chunk in buffer)}]"
                     try:
                         yield from json.loads(x)
-                    except Exception as e:
+                    except:
                         print(x)
-                        print(e)
                         raise
                     buffer = get_buffer()
                     current_chunk = 1
