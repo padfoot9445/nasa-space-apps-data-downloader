@@ -240,16 +240,19 @@ def _validate_object(object: dict[Any, Any]) -> Iterable[str]:
 def main():
     with Pool() as p:
         has_error = False
-        for path in map(Path, sys.argv[1:]):
-            for errors in p.imap_unordered(
-                _validate_object,
-                Enumerable(stream_parse_buffer_by_characters(path)).take(100_000),
-                chunksize=100_000 // 16,
-            ):
-                for error in errors:
-                    print(error)
-
-                    has_error = True
+        for error in (
+            Enumerable(sys.argv[1:])
+            .map(Path)
+            .map(
+                lambda x: Enumerable(stream_parse_buffer_by_characters(x)).take(100_000)
+            )
+            .flat_map(
+                lambda x: p.imap_unordered(_validate_object, x, chunksize=100_000 // 16)
+            )
+            .flatten()
+        ):
+            has_error = True
+            print(error)
     if not has_error:
         print("No errors!!")
 
