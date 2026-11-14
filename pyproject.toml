@@ -26,4 +26,4 @@ dev = [
 ]
 
 [tool.uv.sources]
-python-linq = { git = "https://github.com/padfoot9445/python-linq.git", rev = "82b30736d29010847ec5ec8f19229a93bfb4293e" }
+python-linq = { git = "https://github.com/padfoot9445/python-linq.git" }
