@@ -231,7 +231,7 @@ def main():
     for error in (
         Enumerable(sys.argv[1:])
         .map(Path)
-        .map(lambda x: stream_parse(x, chunks=100))
+        .map(lambda x: stream_parse_buffer_by_characters(x))
         .map(Enumerable)
         .flat_map(lambda x: x.flat_map(validate_object).cast(str))
     ):
