@@ -5,7 +5,7 @@ import enum
 import os
 import sys
 from typing import Any, Callable, cast
-from python_linq import Enumerable
+from python_linq import ControlFlow, Enumerable
 from pathlib import Path
 from functools import cache, cached_property
 from .streaming_json_parser import stream_parse
@@ -184,6 +184,16 @@ VIIRS_SCHEMA = Schema.from_path(SensorType.VIIRS, Path(r"config/fields/VIIRS"))
 os.chdir(cwd)
 
 
+def return_none(x: str | None, y: str | None) -> str | None:
+    if isinstance(x, str) and isinstance(y, str):
+        return x
+    elif x is None:
+        return x
+    elif y is None:
+        return y
+    raise Exception()
+
+
 def validate_object(object: dict[Any, Any]) -> None | str:
     try:
         match object["instrument"]:
@@ -209,7 +219,14 @@ def validate_object(object: dict[Any, Any]) -> None | str:
                     x[1], object=lambda: str(object), name=lambda: x[0]
                 )
             )
-            .first_or_default(None, predicate=lambda x: x is not None)
+            .control_flow(
+                lambda x: (
+                    ControlFlow[str | None].stop_ok(x)
+                    if x is None
+                    else ControlFlow[str | None].ok(x)
+                )
+            )
+            .aggregate(return_none)
         )
         .where(lambda x: x is not None)
         .cast(str)
