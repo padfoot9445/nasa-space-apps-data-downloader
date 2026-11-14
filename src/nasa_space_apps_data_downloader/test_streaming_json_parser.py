@@ -11,4 +11,5 @@ def test_stream_parse():
     i = 0
     for _ in y:
         i += 1
-    print(i)
+
+    assert i == 715433
