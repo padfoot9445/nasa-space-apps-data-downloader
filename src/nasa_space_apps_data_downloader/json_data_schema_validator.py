@@ -5,7 +5,7 @@ import enum
 from multiprocessing import Pool
 import os
 import sys
-from typing import Any, Callable, cast
+from typing import Any, Callable, Iterable, cast
 from python_linq import Enumerable
 from pathlib import Path
 from functools import cache, cached_property
@@ -233,9 +233,23 @@ def process_file(path: Path):
     return has_error
 
 
+def _validate_object(object: dict[Any, Any]) -> Iterable[str]:
+    return list(validate_object(object))
+
+
 def main():
     with Pool() as p:
-        has_error = any(p.map(process_file, map(Path, sys.argv[1:])))
+        has_error = False
+        for path in map(Path, sys.argv[1:]):
+            for errors in p.imap_unordered(
+                _validate_object,
+                Enumerable(stream_parse_buffer_by_characters(path)).take(100_000),
+                chunksize=100_000 // 16,
+            ):
+                for error in errors:
+                    print(error)
+
+                    has_error = True
     if not has_error:
         print("No errors!!")
 
