@@ -207,7 +207,7 @@ def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
                 schema = VIIRS_SCHEMA
             case "MODIS":
                 schema = MODIS_SCHEMA
-            case "OLI-2" | "SNPP":
+            case "OLI-2" | "SNPP" | "OLI":
                 return Enumerable[str].empty()
             case x:
                 return Enumerable([f"Unknown instrument specifier {x}"])
