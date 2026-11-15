@@ -361,8 +361,9 @@ by public CDN/tile services, so an internet connection is required to show the
 map.
 
 Below the map, the daily time-series chart uses the same filters and shows
-observation counts by UTC date. VIIRS is multiplied by 5 by default for display
-only; the scale is adjustable in the browser and does not change API results.
+observation counts by UTC date. VIIRS counts are divided by a ratio of 5 by
+default for display only; the ratio is adjustable in the browser and does not
+change API results.
 These counts are satellite detections, not estimates of unique fire events.
 The API endpoint `/api/observations/timeseries` returns the unscaled MODIS and
 VIIRS counts, aggregated in SQLite.

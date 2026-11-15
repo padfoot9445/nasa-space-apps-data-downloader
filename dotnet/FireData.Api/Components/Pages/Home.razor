@@ -172,14 +172,14 @@
                             <h2 id="time-series-title">Fire activity over time</h2>
                         </div>
                         <label class="scale-control">
-                            <span>VIIRS scale</span>
+                            <span>VIIRS / MODIS ratio</span>
                             <div>
-                                <input type="number" min="0" step="any" @bind="_viirsScale" @bind:event="oninput" @bind:after="UpdateTimeSeriesScaleAsync" aria-label="VIIRS display multiplier" />
-                                <span>× MODIS</span>
+                                <input type="number" min="0.001" step="any" @bind="_viirsScaleInput" @bind:event="oninput" @bind:after="UpdateTimeSeriesScaleAsync" aria-label="VIIRS to MODIS count ratio" />
+                                <span>VIIRS ÷ ratio</span>
                             </div>
                         </label>
                     </div>
-                    <p class="time-series-note">Counts use the selected filters. VIIRS is scaled for display only; both series remain sensor detection counts.</p>
+                    <p class="time-series-note">Counts use the selected filters. VIIRS is divided by the ratio for visual comparison only; the API still returns raw sensor detection counts.</p>
                     <div id="time-series-chart" class="time-series-chart-container @(_timeSeriesCount == 0 ? "chart-container-hidden" : "")"></div>
                     @if (!string.IsNullOrWhiteSpace(_timeSeriesError))
                     {
@@ -196,7 +196,7 @@
                     {
                         <div class="chart-legend">
                             <span><i class="legend-line modis-line"></i> MODIS</span>
-                            <span><i class="legend-line viirs-line"></i> VIIRS × @ViirsScale.ToString("0.##", CultureInfo.InvariantCulture)</span>
+                            <span><i class="legend-line viirs-line"></i> VIIRS ÷ @ViirsScale.ToString("0.##", CultureInfo.InvariantCulture)</span>
                         </div>
                     }
                     else if (_hasSearched)
@@ -303,10 +303,18 @@
     private double? _brightnessMax;
     private double? _frpMin;
     private double? _frpMax;
-    private double? _viirsScale = 5;
+    private string _viirsScaleInput = "5";
 
     private double ViirsScale =>
-        _viirsScale is { } scale && double.IsFinite(scale) && scale >= 0 ? scale : 5;
+        double.TryParse(
+            _viirsScaleInput,
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out var scale) &&
+        double.IsFinite(scale) &&
+        scale > 0
+            ? scale
+            : 5;
 
     private async Task UpdateTimeSeriesScaleAsync()
     {
@@ -590,7 +598,7 @@
         _west = _south = _east = _north = null;
         _centerLatitude = _centerLongitude = _radiusMeters = null;
         _brightnessMin = _brightnessMax = _frpMin = _frpMax = null;
-        _viirsScale = 5;
+        _viirsScaleInput = "5";
         _observations.Clear();
         _loadedObservationCount = 0;
         _timeSeriesCount = 0;

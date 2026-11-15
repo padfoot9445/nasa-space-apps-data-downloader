@@ -218,14 +218,14 @@ function renderTimeSeries(elementId, entry) {
     svg.setAttribute("role", "img");
     svg.setAttribute(
         "aria-label",
-        `Daily MODIS detections and VIIRS detections scaled by ${entry.scale}`);
+        `Daily MODIS detections and VIIRS detections divided by ${entry.scale}`);
 
     const title = document.createElementNS(namespace, "title");
-    title.textContent = "Daily observation counts; VIIRS scaled client-side.";
+    title.textContent = "Daily observation counts; VIIRS divided by the ratio client-side.";
     svg.append(title);
 
     const maximum = entry.points.reduce(
-        (current, point) => Math.max(current, point.modisCount, point.viirsCount * entry.scale),
+        (current, point) => Math.max(current, point.modisCount, point.viirsCount / entry.scale),
         1);
     appendSvgElement(svg, "line", { x1: 36, y1: 30, x2: 980, y2: 30, class: "chart-grid" });
     appendSvgElement(svg, "line", { x1: 36, y1: 135, x2: 980, y2: 135, class: "chart-grid" });
@@ -266,7 +266,7 @@ function makeChartPath(points, maximum, viirs, scale = 1) {
     const lastIndex = points.length - 1;
     return points.map((point, index) => {
         const x = lastIndex === 0 ? 508 : 36 + 944 * index / lastIndex;
-        const count = viirs ? point.viirsCount * scale : point.modisCount;
+        const count = viirs ? point.viirsCount / scale : point.modisCount;
         const y = 240 - 210 * count / maximum;
         return `${x.toFixed(2)},${y.toFixed(2)}`;
     }).join(" ");
