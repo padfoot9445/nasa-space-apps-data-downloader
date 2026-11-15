@@ -12,16 +12,17 @@ from .schema_row import SchemaRow
 @dataclass(frozen=True)
 class Schema:
     sensor: SensorType
-    rows: list[SchemaRow]
+    rows: tuple[SchemaRow, ...]
 
     @classmethod
     def from_path(cls, sensor: SensorType, path: Path):
         return Schema(
             sensor,
-            Enumerable(path.read_text().splitlines())
-            .filter(lambda x: not x.startswith("//"))
-            .map(SchemaRow.from_config_row)
-            .to_list(),
+            tuple(
+                Enumerable(path.read_text().splitlines())
+                .filter(lambda x: not x.startswith("//"))
+                .map(SchemaRow.from_config_row)
+            ),
         )
 
     @cache
@@ -32,3 +33,14 @@ class Schema:
             raise ValueError(
                 f"{key} was not a valid property for schema {self.sensor}"
             ) from e
+
+    @classmethod
+    def common(cls, left: "Schema", right: "Schema") -> "Schema":
+        return Schema(
+            SensorType.COMBINED,
+            tuple(
+                Enumerable(left.rows).join_on(
+                    right.rows, lambda x: x.name, lambda x: x.name, lambda x, y: x
+                )
+            ),
+        )

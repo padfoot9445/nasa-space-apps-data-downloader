@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from functools import cache
 
+from rustshed import Err, Ok, Result
+
 
 @dataclass
 class VersionSpec:
@@ -10,7 +12,7 @@ class VersionSpec:
     @classmethod
     def try_parse(
         cls, version_spec: str, allowed_specifiers: frozenset[str]
-    ) -> "VersionSpec | str":
+    ) -> Result["VersionSpec", str]:
         specifier: str | None = None
         for allowed_specifier in cached_sort_specifiers(allowed_specifiers):
             if version_spec.endswith(allowed_specifier):
@@ -20,9 +22,9 @@ class VersionSpec:
         try:
             version = float(version_spec)
         except ValueError as e:
-            return str(e)
+            return Err(str(e))
 
-        return VersionSpec(version, specifier)
+        return Ok(VersionSpec(version, specifier))
 
 
 @cache

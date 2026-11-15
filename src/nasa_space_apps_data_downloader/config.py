@@ -30,20 +30,26 @@ class Config:
             )
 
         @cached_property
+        def common(self):
+            return Schema.common(self.modis, self.viirs)
+
+        @cached_property
         def ignored(self):
             return frozenset(
                 (PROJECT_ROOT / r"config/IGNORED_SCHEMA").read_text().splitlines()
             )
 
         @cache
-        def __getitem__(self, key: str):
-            match key.upper():
-                case "MODIS":
+        def __getitem__(self, key: SensorType):
+            match key:
+                case SensorType.MODIS:
                     return self.modis
-                case "VIIRS":
+                case SensorType.VIIRS:
                     return self.viirs
+                case SensorType.COMBINED:
+                    return self.common
                 case _:
-                    raise ValueError(f"Expected MODIS or VIIRS but got {key}")
+                    raise ValueError(f"Unknown key {key}")
 
         @cache
         def get(self, key: str):

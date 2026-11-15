@@ -9,7 +9,7 @@ from .schema_data_type import SchemaDataSpecifier, SchemaDataType
 @dataclass(frozen=True)
 class SchemaRow:
     _name: str
-    _alternatives: list[str]
+    _alternatives: tuple[str, ...]
     optional: bool
     type_specifier: SchemaDataSpecifier
     short_desc: str
@@ -43,7 +43,7 @@ class SchemaRow:
 
         return SchemaRow(
             name,
-            alternatives,
+            tuple(alternatives),
             optional,
             SchemaDataSpecifier(SchemaDataType(cells.first().strip()), cells.first()),
             cells.first_or_default(""),
