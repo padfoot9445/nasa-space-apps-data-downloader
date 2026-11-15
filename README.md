@@ -57,3 +57,46 @@ The database stores timestamps as UTC epoch microseconds and retains original
 MODIS confidence percentages and VIIRS confidence enums. `confidence_class` is
 a stored generated column for common cross-sensor filtering, not a replacement
 for those source values.
+
+## ASP.NET Core API
+
+Run the API from the repository root after importing the database. Its
+development launch profile listens on `http://localhost:5080`:
+
+```bash
+dotnet run --project dotnet/FireData.Api --urls http://localhost:5080
+```
+
+By default, the API connects to `data/fire-observations.sqlite`. Override this
+with the `ConnectionStrings__FireData` environment variable, for example:
+
+```bash
+ConnectionStrings__FireData='Data Source=/absolute/path/fire-observations.sqlite;Foreign Keys=True' \
+  dotnet run --project dotnet/FireData.Api --urls http://localhost:5080
+```
+
+`GET /api/observations` supports the following query parameters:
+
+- `dateFrom` / `dateTo`: inclusive UTC calendar dates (`YYYY-MM-DD`).
+- `acquiredFrom` / `acquiredTo`: ISO 8601 acquisition timestamps with an
+  explicit UTC offset (for example, `2024-04-05T12:00:00Z`); the upper bound is
+  exclusive.
+- `timeOfDayFrom` / `timeOfDayTo`: UTC `HH:mm[:ss]` bounds; the upper bound is
+  exclusive, and both are required to express a range crossing midnight.
+- AOI: either `west`, `south`, `east`, `north` for a bounding box (including
+  antimeridian-crossing boxes), or `centerLatitude`, `centerLongitude`,
+  `radiusMeters` for a circle. Radius searches use R*Tree candidates followed
+  by exact spherical distance filtering.
+- `confidence`: `low`, `nominal`, or `high`; `satellite`: `AQUA`, `TERRA`,
+  `N`, `N20`, or `N21`.
+- `brightnessMin` / `brightnessMax` in Kelvin and `frpMin` / `frpMax` in MW.
+- `type`: `VEGETATION_FIRE`, `ACTIVE_VOLCANO`,
+  `OTHER_STATIC_LAND_SOURCE`, or `OFFSHORE` (MODIS only; VIIRS rows do not
+  match).
+- `pageSize`: 1–500 (default 100). Results are ordered by acquisition time
+  then observation ID. Pass both `afterAcquiredAt` and
+  `afterObservationId` from the returned `next` cursor to continue paging.
+
+Invalid combinations or out-of-range values return validation problem details.
+The development environment exposes the OpenAPI document at `/openapi/v1.json`.
+Example requests are in [FireData.Api.http](./dotnet/FireData.Api/FireData.Api.http).

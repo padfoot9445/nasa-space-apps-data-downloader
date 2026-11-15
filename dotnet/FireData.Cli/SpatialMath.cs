@@ -1,12 +1,12 @@
 namespace FireData.Cli;
 
-internal readonly record struct LongitudeInterval(double West, double East);
-internal readonly record struct SpatialEnvelope(
+public readonly record struct LongitudeInterval(double West, double East);
+public readonly record struct SpatialEnvelope(
     double South,
     double North,
     IReadOnlyList<LongitudeInterval> LongitudeIntervals);
 
-internal static class SpatialMath
+public static class SpatialMath
 {
     private const double MeanEarthRadiusMeters = 6_371_008.8;
 

@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:5080
+
+### Date, UTC time-of-day, confidence, satellite, brightness, and FRP filters
+GET {{baseUrl}}/api/observations?dateFrom=2024-04-05&dateTo=2024-04-06&timeOfDayFrom=18:00&timeOfDayTo=06:00&confidence=high&satellite=N20&brightnessMin=300&frpMin=1&pageSize=25
+
+### Bounding-box AOI (antimeridian crossing supported)
+GET {{baseUrl}}/api/observations?west=170&south=-20&east=-170&north=20&pageSize=25
+
+### Circular AOI
+GET {{baseUrl}}/api/observations?centerLatitude=38&centerLongitude=-122&radiusMeters=5000&pageSize=25
+
+### MODIS hotspot type
+GET {{baseUrl}}/api/observations?type=VEGETATION_FIRE&satellite=TERRA&pageSize=25
+
+### Continue from the returned next cursor
+GET {{baseUrl}}/api/observations?afterAcquiredAt=2024-04-05T12:34:00Z&afterObservationId=100&pageSize=25
+
+### Invalid bounds return RFC 7807 validation problem details
+GET {{baseUrl}}/api/observations?west=-200&south=0&east=10&north=10
