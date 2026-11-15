@@ -1,7 +1,8 @@
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
-from python_linq import Enumerable
+from python_linq import Enumerable, TakeEnumerableException
 
 
 from ..sensor_type import SensorType
@@ -22,3 +23,12 @@ class Schema:
             .map(SchemaRow.from_config_row)
             .to_list(),
         )
+
+    @cache
+    def __getitem__(self, key: str):
+        try:
+            Enumerable(self.rows).where(lambda x: x.name == key).single()
+        except TakeEnumerableException as e:
+            raise ValueError(
+                f"{key} was not a valid property for schema {self.sensor}"
+            ) from e
