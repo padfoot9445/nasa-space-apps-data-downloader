@@ -37,9 +37,7 @@ class SchemaDataSpecifier:
         )
         return f"{validation.unwrap_err()}\n{context_string}"
 
-    def try_into_correct_type(
-        self, data: Any
-    ) -> Result[float | datetime.date | datetime.time | str | int | VersionSpec, str]:
+    def try_into_correct_type(self, data: Any) -> Result[Any, str]:
         match self.type:
             case SchemaDataType.FLOAT:
                 if not (isinstance(data, float) or isinstance(data, int)):
