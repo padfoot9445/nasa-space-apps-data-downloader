@@ -8,8 +8,6 @@ Our project efficiently combines constant MODIS and VIIRS hotspot data over the 
 
 Our project additionally implements OpenStreetMap coverage to provide a live, dedicated interface with an intutitive feel similar to modern mapping applications. With this data fusion, we hope that curious minds to professional fire superforecasters are able to use this application with no prior training.
 
-We have implemented a dedicated analysis section, which graphically allows for trend analysis, directly inside of the platform. With this, there is no need to export data and write a script to compare simple patterns, saving time.
-
 
 # Fire observations: SQLite and C# CLI
 
