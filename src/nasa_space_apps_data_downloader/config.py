@@ -57,7 +57,7 @@ class Config:
                 return None
             else:
                 try:
-                    return self[key]
+                    return self[SensorType.from_string(key)]
                 except ValueError:
                     return None
 
