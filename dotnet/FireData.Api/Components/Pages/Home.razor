@@ -1,0 +1,547 @@
+@page "/"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Firewatch · Active-fire observations</PageTitle>
+
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="/" aria-label="Firewatch home">
+            <span class="brand-mark">F</span>
+            <span>FIREWATCH <small>NASA FIRMS EXPLORER</small></span>
+        </a>
+        <div class="topbar-status"><span class="status-dot"></span> OBSERVATION DATABASE</div>
+    </header>
+
+    <main>
+        <section class="page-heading">
+            <div>
+                <p class="eyebrow">ACTIVE FIRE OBSERVATIONS</p>
+                <h1>Explore the fire record.</h1>
+                <p class="subtitle">Search satellite fire detections by when, where, and how they were observed.</p>
+            </div>
+            <div class="result-summary" aria-live="polite">
+                <strong>@_observations.Count.ToString("N0", CultureInfo.InvariantCulture)</strong>
+                <span>detections loaded</span>
+            </div>
+        </section>
+
+        <div class="workspace">
+            <aside class="filter-panel">
+                <div class="panel-heading">
+                    <div><p class="eyebrow">SEARCH</p><h2>Filters</h2></div>
+                    <button class="text-button" type="button" @onclick="ResetFilters" disabled="@_isLoading">Reset</button>
+                </div>
+
+                <form @onsubmit="SearchAsync" @onsubmit:preventDefault>
+                    <fieldset disabled="@_isLoading">
+                        <section class="filter-section">
+                            <h3>When</h3>
+                            <div class="field-grid two">
+                                <label>
+                                    <span>From date (UTC)</span>
+                                    <input type="date" @bind="_dateFrom" />
+                                </label>
+                                <label>
+                                    <span>To date (UTC)</span>
+                                    <input type="date" @bind="_dateTo" />
+                                </label>
+                                <label>
+                                    <span>Time from (UTC)</span>
+                                    <input type="time" @bind="_timeFrom" />
+                                </label>
+                                <label>
+                                    <span>Time to (UTC)</span>
+                                    <input type="time" @bind="_timeTo" />
+                                </label>
+                            </div>
+                            <p class="field-hint">Time-of-day bounds can cross midnight, e.g. 18:00–06:00.</p>
+                        </section>
+
+                        <section class="filter-section">
+                            <h3>Where</h3>
+                            <label class="select-label">
+                                <span>Area of interest</span>
+                                <select @bind="_areaMode">
+                                    <option value="none">Anywhere</option>
+                                    <option value="bounds">Bounding box</option>
+                                    <option value="radius">Center and radius</option>
+                                </select>
+                            </label>
+                            @if (_areaMode == "bounds")
+                            {
+                                <div class="field-grid two area-fields">
+                                    <label><span>West longitude</span><input type="number" step="any" min="-180" max="180" @bind="_west" /></label>
+                                    <label><span>South latitude</span><input type="number" step="any" min="-90" max="90" @bind="_south" /></label>
+                                    <label><span>East longitude</span><input type="number" step="any" min="-180" max="180" @bind="_east" /></label>
+                                    <label><span>North latitude</span><input type="number" step="any" min="-90" max="90" @bind="_north" /></label>
+                                </div>
+                            }
+                            else if (_areaMode == "radius")
+                            {
+                                <div class="field-grid two area-fields">
+                                    <label><span>Center latitude</span><input type="number" step="any" min="-90" max="90" @bind="_centerLatitude" /></label>
+                                    <label><span>Center longitude</span><input type="number" step="any" min="-180" max="180" @bind="_centerLongitude" /></label>
+                                    <label class="span-two"><span>Radius (meters)</span><input type="number" step="any" min="0.001" max="20000000" @bind="_radiusMeters" /></label>
+                                </div>
+                            }
+                            <p class="field-hint">Bounding boxes support antimeridian-crossing longitudes.</p>
+                        </section>
+
+                        <section class="filter-section">
+                            <h3>Satellite &amp; confidence</h3>
+                            <div class="field-grid two">
+                                <label>
+                                    <span>Satellite</span>
+                                    <select @bind="_satellite">
+                                        <option value="">All satellites</option>
+                                        <option value="AQUA">Aqua</option>
+                                        <option value="TERRA">Terra</option>
+                                        <option value="N">Suomi NPP</option>
+                                        <option value="N20">NOAA-20</option>
+                                        <option value="N21">NOAA-21</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>Confidence</span>
+                                    <select @bind="_confidence">
+                                        <option value="">All levels</option>
+                                        <option value="low">Low</option>
+                                        <option value="nominal">Nominal</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </section>
+
+                        <section class="filter-section">
+                            <h3>Detection properties</h3>
+                            <div class="field-grid two">
+                                <label><span>Brightness min (K)</span><input type="number" step="any" min="0" @bind="_brightnessMin" /></label>
+                                <label><span>Brightness max (K)</span><input type="number" step="any" min="0" @bind="_brightnessMax" /></label>
+                                <label><span>FRP min (MW)</span><input type="number" step="any" min="0" @bind="_frpMin" /></label>
+                                <label><span>FRP max (MW)</span><input type="number" step="any" min="0" @bind="_frpMax" /></label>
+                            </div>
+                            <label class="select-label type-filter">
+                                <span>MODIS hotspot type</span>
+                                <select @bind="_type">
+                                    <option value="">Any type</option>
+                                    <option value="VEGETATION_FIRE">Vegetation fire</option>
+                                    <option value="ACTIVE_VOLCANO">Active volcano</option>
+                                    <option value="OTHER_STATIC_LAND_SOURCE">Other static land source</option>
+                                    <option value="OFFSHORE">Offshore</option>
+                                </select>
+                            </label>
+                        </section>
+
+                        <label class="page-size-label">
+                            <span>Results per page</span>
+                            <select @bind="_pageSize">
+                                <option value="100">100</option>
+                                <option value="250">250</option>
+                                <option value="500">500</option>
+                            </select>
+                        </label>
+
+                        <button class="search-button" type="submit">
+                            <span aria-hidden="true">⌕</span> Search observations
+                        </button>
+                    </fieldset>
+                </form>
+            </aside>
+
+            <section class="results-panel">
+                <div class="map-toolbar">
+                    <div>
+                        <p class="eyebrow">GEOGRAPHIC VIEW</p>
+                        <h2>Fire detections</h2>
+                    </div>
+                    <div class="map-legend">
+                        <span><i class="legend-dot modis"></i> MODIS</span>
+                        <span><i class="legend-dot viirs"></i> VIIRS</span>
+                    </div>
+                </div>
+
+                <div id="fire-map" class="fire-map" role="application" aria-label="Map of fire detections"></div>
+                <p class="map-attribution">Map © OpenStreetMap contributors · Markers show the currently loaded results</p>
+
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <div class="alert error-alert" role="alert">
+                        <strong>Search failed</strong>
+                        <span>@_error</span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_mapError))
+                {
+                    <div class="alert map-alert" role="status">@_mapError</div>
+                }
+
+                @if (_observations.Count > 0)
+                {
+                    <div class="results-toolbar">
+                        <div>
+                            <h3>Loaded detections <span class="count-pill">@_observations.Count.ToString("N0", CultureInfo.InvariantCulture)</span></h3>
+                            <p>Page results are capped by the API; load another page to add more markers.</p>
+                        </div>
+                        @if (_nextPageUrl is not null)
+                        {
+                            <button class="next-button" type="button" @onclick="LoadNextPageAsync" disabled="@_isLoading">
+                                @(_isLoading ? "Loading…" : "Load next page") <span aria-hidden="true">→</span>
+                            </button>
+                        }
+                    </div>
+                    <div class="observation-list">
+                        @foreach (var observation in _observations.Take(12))
+                        {
+                            <article class="observation-row" @key="observation.ObservationId">
+                                <span class="observation-icon @(observation.Instrument == "MODIS" ? "modis-bg" : "viirs-bg")">@(observation.Instrument == "MODIS" ? "M" : "V")</span>
+                                <div class="observation-main">
+                                    <strong>@observation.Satellite <span class="muted">· @observation.Confidence confidence</span></strong>
+                                    <span>@observation.AcquiredAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture)</span>
+                                </div>
+                                <div class="observation-values">
+                                    <span>@observation.Brightness.ToString("0.#", CultureInfo.InvariantCulture) K</span>
+                                    <span>@observation.FireRadiativePower.ToString("0.##", CultureInfo.InvariantCulture) MW</span>
+                                </div>
+                            </article>
+                        }
+                        @if (_observations.Count > 12)
+                        {
+                            <p class="list-note">Showing the first 12 detections here; all @_observations.Count.ToString("N0", CultureInfo.InvariantCulture) loaded detections are on the map.</p>
+                        }
+                    </div>
+                }
+                else if (!_isLoading && string.IsNullOrWhiteSpace(_error) && _hasSearched)
+                {
+                    <div class="empty-state"><span>◎</span><h3>No matching detections</h3><p>Try widening the date range or removing one of the filters.</p></div>
+                }
+                else if (!_hasSearched)
+                {
+                    <div class="empty-state"><span>⌖</span><h3>Ready when you are</h3><p>Choose filters and search to view matching satellite detections.</p></div>
+                }
+            </section>
+        </div>
+    </main>
+    <footer>Firewatch <span>·</span> MODIS &amp; VIIRS active-fire observations <span>·</span> Times shown in UTC</footer>
+</div>
+
+@code {
+    private readonly List<ObservationResponse> _observations = [];
+    private IJSObjectReference? _mapModule;
+    private string? _error;
+    private string? _mapError;
+    private string? _baseSearchUrl;
+    private string? _nextPageUrl;
+    private bool _isLoading;
+    private bool _hasSearched;
+    private string _areaMode = "none";
+    private DateOnly? _dateFrom;
+    private DateOnly? _dateTo;
+    private TimeOnly? _timeFrom;
+    private TimeOnly? _timeTo;
+    private string _satellite = "";
+    private string _confidence = "";
+    private string _type = "";
+    private string _pageSize = "250";
+    private double? _west;
+    private double? _south;
+    private double? _east;
+    private double? _north;
+    private double? _centerLatitude;
+    private double? _centerLongitude;
+    private double? _radiusMeters;
+    private double? _brightnessMin;
+    private double? _brightnessMax;
+    private double? _frpMin;
+    private double? _frpMax;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            _mapModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/fire-map.js");
+            await _mapModule.InvokeVoidAsync("initialize", "fire-map");
+        }
+        catch (JSException exception)
+        {
+            _mapError = $"The map could not be initialized: {exception.Message}";
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        _error = null;
+        _hasSearched = true;
+        _baseSearchUrl = null;
+        _nextPageUrl = null;
+        _observations.Clear();
+        await UpdateMapAsync();
+
+        if (!TryBuildSearchUrl(out var url, out var validationError))
+        {
+            _error = validationError;
+            return;
+        }
+
+        _baseSearchUrl = url;
+        await FetchPageAsync(url, append: false);
+    }
+
+    private async Task LoadNextPageAsync()
+    {
+        if (_nextPageUrl is null || _isLoading)
+        {
+            return;
+        }
+
+        _error = null;
+        await FetchPageAsync(_nextPageUrl, append: true);
+    }
+
+    private async Task FetchPageAsync(string url, bool append)
+    {
+        _isLoading = true;
+        try
+        {
+            if (_mapModule is null)
+            {
+                _error = "The search interface is still initializing. Please try again.";
+                return;
+            }
+
+            var response = await _mapModule.InvokeAsync<ApiFetchResult>("fetchObservations", url);
+            if (!response.Success)
+            {
+                if (response.StatusCode == 0)
+                {
+                    _error = $"Could not reach the observation API: {response.Body}";
+                    return;
+                }
+
+                _error = DescribeApiError((HttpStatusCode)response.StatusCode, response.Body);
+                return;
+            }
+
+            var page = JsonSerializer.Deserialize<ObservationSearchResponse>(
+                response.Body,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            if (page is null)
+            {
+                _error = "The API returned an empty or invalid response.";
+                return;
+            }
+
+            if (!append)
+            {
+                _observations.Clear();
+            }
+            _observations.AddRange(page.Items);
+            _nextPageUrl = page.Next is null ? null : BuildNextPageUrl(page.Next);
+            await UpdateMapAsync();
+        }
+        catch (JSException exception)
+        {
+            _error = $"Could not query the observation API: {exception.Message}";
+        }
+        catch (JsonException exception)
+        {
+            _error = $"The API response could not be read: {exception.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private bool TryBuildSearchUrl(out string url, out string? error)
+    {
+        var values = new Dictionary<string, string?>();
+        AddDate("dateFrom", _dateFrom);
+        AddDate("dateTo", _dateTo);
+        AddTime("timeOfDayFrom", _timeFrom);
+        AddTime("timeOfDayTo", _timeTo);
+        AddText("satellite", _satellite);
+        AddText("confidence", _confidence);
+        AddText("type", _type);
+        AddNumber("brightnessMin", _brightnessMin);
+        AddNumber("brightnessMax", _brightnessMax);
+        AddNumber("frpMin", _frpMin);
+        AddNumber("frpMax", _frpMax);
+        values["pageSize"] = _pageSize;
+
+        if (_areaMode == "bounds")
+        {
+            if (_west is null || _south is null || _east is null || _north is null)
+            {
+                url = "";
+                error = "Enter all four bounding-box coordinates.";
+                return false;
+            }
+            AddNumber("west", _west);
+            AddNumber("south", _south);
+            AddNumber("east", _east);
+            AddNumber("north", _north);
+        }
+        else if (_areaMode == "radius")
+        {
+            if (_centerLatitude is null || _centerLongitude is null || _radiusMeters is null)
+            {
+                url = "";
+                error = "Enter the center latitude, center longitude, and radius.";
+                return false;
+            }
+            AddNumber("centerLatitude", _centerLatitude);
+            AddNumber("centerLongitude", _centerLongitude);
+            AddNumber("radiusMeters", _radiusMeters);
+        }
+
+        url = QueryHelpers.AddQueryString("api/observations", values);
+        error = null;
+        return true;
+
+        void AddText(string key, string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                values[key] = value;
+            }
+        }
+
+        void AddDate(string key, DateOnly? value)
+        {
+            if (value is { } date)
+            {
+                values[key] = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
+        }
+
+        void AddTime(string key, TimeOnly? value)
+        {
+            if (value is { } time)
+            {
+                values[key] = time.ToString("HH:mm", CultureInfo.InvariantCulture);
+            }
+        }
+
+        void AddNumber(string key, double? value)
+        {
+            if (value is { } number)
+            {
+                values[key] = number.ToString("R", CultureInfo.InvariantCulture);
+            }
+        }
+    }
+
+    private string BuildNextPageUrl(ObservationCursorResponse cursor)
+    {
+        if (_baseSearchUrl is null)
+        {
+            throw new InvalidOperationException("Cannot continue a search before its first page.");
+        }
+
+        return QueryHelpers.AddQueryString(
+            _baseSearchUrl,
+            new Dictionary<string, string?>
+            {
+                ["afterAcquiredAt"] = cursor.AcquiredAt.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
+                ["afterObservationId"] = cursor.ObservationId.ToString(CultureInfo.InvariantCulture)
+            });
+    }
+
+    private async Task ResetFilters()
+    {
+        _areaMode = "none";
+        _dateFrom = null;
+        _dateTo = null;
+        _timeFrom = null;
+        _timeTo = null;
+        _satellite = "";
+        _confidence = "";
+        _type = "";
+        _pageSize = "250";
+        _west = _south = _east = _north = null;
+        _centerLatitude = _centerLongitude = _radiusMeters = null;
+        _brightnessMin = _brightnessMax = _frpMin = _frpMax = null;
+        _observations.Clear();
+        _baseSearchUrl = null;
+        _nextPageUrl = null;
+        _error = null;
+        _hasSearched = false;
+        await UpdateMapAsync();
+    }
+
+    private static string DescribeApiError(HttpStatusCode statusCode, string body)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.TryGetProperty("errors", out var errors))
+            {
+                var details = errors.EnumerateObject()
+                    .SelectMany(property => property.Value.EnumerateArray().Select(value => value.GetString()))
+                    .Where(message => !string.IsNullOrWhiteSpace(message));
+                var messages = string.Join(" ", details);
+                if (!string.IsNullOrWhiteSpace(messages))
+                {
+                    return messages;
+                }
+            }
+            if (document.RootElement.TryGetProperty("detail", out var detail) &&
+                detail.GetString() is { Length: > 0 } detailText)
+            {
+                return detailText;
+            }
+            if (document.RootElement.TryGetProperty("title", out var title) &&
+                title.GetString() is { Length: > 0 } titleText)
+            {
+                return titleText;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return $"The observation API returned {(int)statusCode} {statusCode}.";
+    }
+
+    private async Task UpdateMapAsync()
+    {
+        if (_mapModule is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _mapModule.InvokeVoidAsync("setObservations", _observations);
+        }
+        catch (JSException exception)
+        {
+            _mapError = $"Map markers could not be updated: {exception.Message}";
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_mapModule is not null)
+        {
+            try
+            {
+                await _mapModule.InvokeVoidAsync("dispose", "fire-map");
+                await _mapModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
+
+    private sealed record ApiFetchResult(bool Success, int StatusCode, string Body);
+}

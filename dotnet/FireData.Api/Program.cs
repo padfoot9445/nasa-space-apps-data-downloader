@@ -11,6 +11,8 @@ var connectionString = builder.Configuration.GetConnectionString("FireData")
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddDbContext<FireDataContext>(options => options.UseSqlite(connectionString));
@@ -26,6 +28,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseAntiforgery();
+
 app.MapObservationEndpoints();
+app.MapStaticAssets();
+app.MapRazorComponents<FireData.Api.Components.App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();

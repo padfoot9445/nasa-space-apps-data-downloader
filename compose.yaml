@@ -1,0 +1,22 @@
+services:
+  firewatch:
+    image: firewatch:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DOTNET_VERSION: "${DOTNET_VERSION:-11.0}"
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__FireData: "Data Source=/data/fire-observations.sqlite;Mode=ReadOnly;Foreign Keys=True"
+    ports:
+      - "127.0.0.1:${FIREDATA_PORT:-5080}:8080"
+    volumes:
+      - type: bind
+        source: "${FIREDATA_DB_PATH:-./data/fire-observations.sqlite}"
+        target: /data/fire-observations.sqlite
+        read_only: true
+        bind:
+          create_host_path: false

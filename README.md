@@ -45,13 +45,14 @@ DBSCAN is available per sensor:
 dotnet run --project dotnet/FireData.Cli -- cluster --database data/fire-observations.sqlite --instrument VIIRS --epsilon-m 500 --min-points 4
 ```
 
-Cluster assignments, including noise points, are recorded with their parameters
-in `preprocessing_runs` and `cluster_memberships`. Cross-sensor clustering is
+Cluster assignments, including noise points (persisted with a null
+`cluster_id`), are recorded with their parameters in `preprocessing_runs` and
+`cluster_memberships`. Cross-sensor clustering is
 intentionally not implemented: MODIS and VIIRS have different sensitivity
 characteristics, and no scientific harmonization method or thresholds have
-been specified. DBSCAN loads the selected observations into memory; spatial
-indexing reduces neighborhood lookups, but does not make the entire
-preprocessing operation streaming.
+been specified. The standalone `cluster` command loads its selected
+observations into memory. The `process` pipeline below uses a separate
+SQLite-staged implementation to bound C# memory.
 
 ## C# processing pipeline (stages 02–05)
 
@@ -101,6 +102,69 @@ temporary tables and the observation R*Tree, and streams neighborhood
 candidates rather than retaining the entire selected point set in C# memory.
 Temporary SQLite storage needs enough disk space for the staged input and
 working queue.
+
+### Processing code flow and performance
+
+The command path is `Commands` → `ProcessingCommands.RunAsync` →
+`DatabaseDbscan.ClusterAsync`. The main implementation is in
+[ProcessingCommands.cs](./dotnet/FireData.Cli/ProcessingCommands.cs) and
+[DatabaseDbscan.cs](./dotnet/FireData.Cli/DatabaseDbscan.cs).
+
+1. `ProcessingCommands.RunAsync` validates the options, selects rows matching
+   the instrument/confidence/date filters, counts rows rejected by quality
+   rules, and creates a versioned processing run with source-file provenance.
+2. One `INSERT ... SELECT` stages eligible observations into temporary
+   `processing_points` rows, adding their grid coordinates and initial
+   clustering state. SQLite temp storage is set to `FILE`; the selected points
+   are not copied into a whole-dataset C# collection.
+3. `DatabaseDbscan` processes MODIS and VIIRS separately. It reads seed points
+   in batches of 256. For each point, SQLite joins the persistent
+   `observation_rtree` to the staged rows and narrows candidates by spatial
+   bounding box and a conservative time window. Candidate coordinates are
+   streamed through a bounded buffer; C# computes the exact haversine-plus-time
+   metric in parallel for buffers of at least 256 points, and matching IDs are
+   inserted into a temporary table in batches. Smaller buffers are checked
+   sequentially to avoid parallel scheduling overhead.
+4. SQLite updates visited/core/cluster labels and builds the expansion queue.
+   C# orchestrates queue expansion in batches of up to 256 points, avoiding
+   the old per-neighbor insert and per-queue-item select/delete/update
+   round-trips. Previously-noise points can still be assigned as border points.
+   Progress is written to stderr every 1,000 scanned seed candidates while
+   clustering, with a final per-instrument summary.
+5. After clustering, SQL `INSERT ... SELECT` statements persist memberships,
+   aggregate event summaries and daily grid metrics, and calculate the
+   same-day adjacent-cell presence heuristic. The processing transaction is
+committed only after all products are written. Staging, clustering, and
+persistence phase durations are reported to stderr.
+6. Calibration is a separate command in
+   [CalibrationCommands.cs](./dotnet/FireData.Cli/CalibrationCommands.cs).
+   It reads daily metrics, fits/evaluates the selected model in C#, and writes
+   model metadata and calibrated products to SQLite.
+
+The database-side work is substantial, but this is not a single set-based
+clustering query. DBSCAN still needs neighborhood expansion, and the current
+implementation performs one indexed neighborhood search for each visited
+point that must be classified. The persistent R*Tree avoids scanning all
+observations for each point, but dense hotspots can still have large
+neighborhoods and approach quadratic candidate work. Parallel exact-distance
+checks reduce the serial CPU work for dense candidate buffers, but do not
+reduce how many candidates must be fetched or checked; small neighborhoods
+may see little benefit. The matching IDs for a single neighborhood are
+collected before their batched insertion, so unusually large neighborhoods
+temporarily require memory proportional to their match count. Staging, queue
+updates, and durable result writes add SQLite I/O; temporary files and the
+final products can require considerable free disk space.
+
+The batched implementation has been regression-tested on synthetic inputs,
+including neighborhoods larger than one 256-point queue batch. It has **not**
+been benchmarked against the full 1.18-million-row database, so no end-to-end
+speedup or full-run duration is claimed. Before a full run, try a bounded
+`--from` / `--to` interval, monitor the progress output and temporary-disk
+usage, and compare elapsed time as the input interval grows. Further
+optimization should be guided by those measurements and SQLite query plans.
+The next likely opportunities are improving candidate selectivity for dense
+areas and caching neighborhood results if the added temporary storage proves
+worthwhile.
 
 `daily_cell_metrics` contains observed-cell counts, cluster counts, FRP sum/max,
 and spherical cell area. `daily_cell_presence_heuristic` separately records
@@ -179,6 +243,38 @@ Run the processing and migration regression tests with:
 dotnet test dotnet/dotnet.slnx
 ```
 
+### Standalone Rust alternative
+
+The `rust/` Cargo project provides a separate implementation of the processing
+and calibration commands. It writes the same schema-v2 product tables while
+using distinct Rust algorithm-version labels. The Rust CLI does not import data
+or migrate the database; run the existing C# `migrate` command first when
+needed. Build and test it with:
+
+```bash
+cargo test --manifest-path rust/Cargo.toml
+cargo build --release --manifest-path rust/Cargo.toml
+```
+
+Run a bounded processing smoke test and then calibrate its run:
+
+```bash
+cargo run --manifest-path rust/Cargo.toml -- process --database data/fire-observations.sqlite --from 2025-01-01 --to 2025-02-01
+cargo run --manifest-path rust/Cargo.toml -- calibrate --database data/fire-observations.sqlite --run-id <RUN_ID> --count-method ratio
+```
+
+It supports the same processing controls (`--grid-degrees`, `--epsilon-m`,
+`--time-scale-m-per-day`, `--min-points`, `--instrument`,
+`--confidence-class`, `--from`, and `--to`) and both `ratio` and `poisson`
+calibration. Rayon parallelizes exact-distance checks on candidate batches;
+SQLite writes remain serialized, and neighborhood expansion remains iterative.
+The port is regression-tested on synthetic fixtures, including dense candidate
+batches, noise-to-border behavior, and both calibration methods, but it has not
+been benchmarked against the full dataset. Do not run both CLIs concurrently
+against the same database. For implementation comparisons, use separate copies
+of the same schema-v2 fixture so calibration model replacement cannot affect
+the other run.
+
 The database stores timestamps as UTC epoch microseconds and retains original
 MODIS confidence percentages and VIIRS confidence enums. `confidence_class` is
 a stored generated column for common cross-sensor filtering, not a replacement
@@ -226,3 +322,44 @@ ConnectionStrings__FireData='Data Source=/absolute/path/fire-observations.sqlite
 Invalid combinations or out-of-range values return validation problem details.
 The development environment exposes the OpenAPI document at `/openapi/v1.json`.
 Example requests are in [FireData.Api.http](./dotnet/FireData.Api/FireData.Api.http).
+
+### Run Firewatch with Docker
+
+The repository includes a Docker image, Compose configuration, and launcher.
+First import or migrate the observations database to schema v2, then start
+Firewatch from the repository root:
+
+```bash
+./scripts/run-firewatch.sh
+```
+
+This builds the API/UI image, runs it in the background, waits until the page
+is available, and opens [http://localhost:5080](http://localhost:5080) in the
+browser. Docker Engine/Desktop with the Compose v2 plugin is required. The
+default database is `data/fire-observations.sqlite`; pass another existing
+database as an argument or set `FIREDATA_DB_PATH`:
+
+```bash
+./scripts/run-firewatch.sh /absolute/path/fire-observations.sqlite
+# or
+FIREDATA_DB_PATH=/absolute/path/fire-observations.sqlite ./scripts/run-firewatch.sh --no-browser
+```
+
+The browser launcher can be suppressed with `--no-browser`. Set `FIREDATA_PORT`
+to change the local port (default `5080`). For Windows PowerShell, use
+`.\scripts\run-firewatch.ps1 -DatabasePath C:\path\fire-observations.sqlite`.
+Stop the service with `docker compose down` from the repository root.
+
+The database file is mounted into the container read-only and is not included
+in the image or Docker build context. It remains on the host. The UI queries
+`/api/observations` from the browser and plots MODIS and VIIRS results on a
+Leaflet/OpenStreetMap map. Filters include UTC dates and time-of-day, bounding
+box or radius area of interest, satellite, confidence, brightness, FRP, and
+MODIS hotspot type. Results are paged (up to 500 per request); loading the next
+page adds those detections to the map. Leaflet, fonts, and map tiles are served
+by public CDN/tile services, so an internet connection is required to show the
+map.
+
+For local development without Docker, run
+`dotnet run --project dotnet/FireData.Api --urls http://localhost:5080` and
+open the same URL.

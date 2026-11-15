@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
@@ -54,6 +55,8 @@ internal static class ProcessingCommands
         }
 
         var gridScheme = $"latlon-{gridDegrees.ToString("0.########", CultureInfo.InvariantCulture)}-degrees-v1";
+        var totalStopwatch = Stopwatch.StartNew();
+        var stagingStopwatch = Stopwatch.StartNew();
         await using var connection = new SqliteConnection(
             $"Data Source={databasePath};Foreign Keys=True");
         await connection.OpenAsync();
@@ -161,7 +164,9 @@ internal static class ProcessingCommands
         }
 
         await CreateWorkingIndexesAsync(connection, transaction);
+        Console.Error.WriteLine($"Input selection and staging completed in {stagingStopwatch.Elapsed:g}.");
 
+        var clusteringStopwatch = Stopwatch.StartNew();
         var instrumentNames = new List<string>();
         await using (var command = CreateCommand(
             connection,
@@ -188,10 +193,12 @@ internal static class ProcessingCommands
             totalClusters += clusters;
         }
 
+        Console.Error.WriteLine($"Clustering completed in {clusteringStopwatch.Elapsed:g}.");
         var totalNoise = await ScalarLongAsync(
             connection,
             transaction,
             "SELECT COUNT(*) FROM temp.processing_points WHERE cluster_id = -1");
+        var persistenceStopwatch = Stopwatch.StartNew();
         await PersistMembershipsAsync(connection, transaction, runId);
         await PersistEventsAsync(connection, transaction, runId);
         await PersistDailyMetricsAsync(
@@ -209,6 +216,9 @@ internal static class ProcessingCommands
             gridScheme);
 
         await transaction.CommitAsync();
+        Console.Error.WriteLine(
+            $"Aggregation and persistence completed in {persistenceStopwatch.Elapsed:g}.");
+        Console.Error.WriteLine($"Processing completed in {totalStopwatch.Elapsed:g}.");
         Console.WriteLine(JsonSerializer.Serialize(new
         {
             preprocessingRunId = runId,
@@ -250,7 +260,23 @@ internal static class ProcessingCommands
             );
             CREATE TEMP TABLE processing_queue (
                 queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                observation_id INTEGER NOT NULL UNIQUE
+                observation_id INTEGER NOT NULL UNIQUE,
+                processed INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TEMP TABLE processing_neighbors (
+                observation_id INTEGER PRIMARY KEY
+            );
+            CREATE TEMP TABLE processing_core_points (
+                observation_id INTEGER PRIMARY KEY
+            );
+            CREATE TEMP TABLE processing_frontier (
+                queue_id INTEGER PRIMARY KEY,
+                observation_id INTEGER NOT NULL,
+                acquired_at_utc_us INTEGER NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                was_visited INTEGER NOT NULL,
+                previous_cluster_id INTEGER NOT NULL
             );
             """);
     }
@@ -455,386 +481,13 @@ internal static class ProcessingCommands
         double epsilonMeters,
         double timeScaleMetersPerDay,
         int minPoints)
-    {
-        var clusterCount = 0;
-        long lastObservationId = 0;
-        while (true)
-        {
-            var point = await ReadNextPointAsync(
-                connection,
-                transaction,
-                instrument,
-                lastObservationId);
-            if (point is null)
-            {
-                break;
-            }
-
-            lastObservationId = point.Value.ObservationId;
-            if (point.Value.Visited)
-            {
-                continue;
-            }
-
-            await UpdatePointStateAsync(
-                connection,
-                transaction,
-                point.Value.ObservationId,
-                visited: true);
-            var core = await HasEnoughNeighborsAsync(
-                connection,
-                transaction,
-                instrument,
-                point.Value,
-                epsilonMeters,
-                timeScaleMetersPerDay,
-                minPoints);
-            if (!core)
-            {
-                await UpdatePointStateAsync(
-                    connection,
-                    transaction,
-                    point.Value.ObservationId,
-                    clusterId: -1);
-                continue;
-            }
-
-            clusterCount++;
-            await UpdatePointStateAsync(
-                connection,
-                transaction,
-                point.Value.ObservationId,
-                clusterId: clusterCount,
-                isCorePoint: true);
-            await ExecuteAsync(connection, transaction, "DELETE FROM temp.processing_queue");
-            await EnqueueNeighborsAsync(
-                connection,
-                transaction,
-                instrument,
-                point.Value,
-                epsilonMeters,
-                timeScaleMetersPerDay);
-
-            while (true)
-            {
-                var next = await DequeueAsync(connection, transaction);
-                if (!next.HasValue)
-                {
-                    break;
-                }
-
-                var candidate = await ReadPointAsync(connection, transaction, next.Value);
-                if (!candidate.Visited)
-                {
-                    await UpdatePointStateAsync(
-                        connection,
-                        transaction,
-                        candidate.ObservationId,
-                        visited: true);
-                    var candidateIsCore = await HasEnoughNeighborsAsync(
-                        connection,
-                        transaction,
-                        instrument,
-                        candidate,
-                        epsilonMeters,
-                        timeScaleMetersPerDay,
-                        minPoints);
-                    if (candidateIsCore)
-                    {
-                        await UpdatePointStateAsync(
-                            connection,
-                            transaction,
-                            candidate.ObservationId,
-                            isCorePoint: true);
-                        await EnqueueNeighborsAsync(
-                            connection,
-                            transaction,
-                            instrument,
-                            candidate,
-                            epsilonMeters,
-                            timeScaleMetersPerDay);
-                    }
-                }
-
-                if (candidate.ClusterId <= 0)
-                {
-                    await UpdatePointStateAsync(
-                        connection,
-                        transaction,
-                        candidate.ObservationId,
-                        clusterId: clusterCount);
-                }
-            }
-        }
-
-        return clusterCount;
-    }
-
-    private static async Task<bool> HasEnoughNeighborsAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        string instrument,
-        ProcessingPoint point,
-        double epsilonMeters,
-        double timeScaleMetersPerDay,
-        int minPoints)
-    {
-        var count = 0;
-        await ForEachNeighborAsync(
+        => await DatabaseDbscan.ClusterAsync(
             connection,
             transaction,
             instrument,
-            point,
             epsilonMeters,
             timeScaleMetersPerDay,
-            async neighborId =>
-            {
-                count++;
-                if (count >= minPoints)
-                {
-                    return false;
-                }
-
-                await Task.CompletedTask;
-                return true;
-            });
-        return count >= minPoints;
-    }
-
-    private static async Task EnqueueNeighborsAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        string instrument,
-        ProcessingPoint point,
-        double epsilonMeters,
-        double timeScaleMetersPerDay)
-    {
-        await using var enqueue = CreateCommand(
-            connection,
-            transaction,
-            """
-            INSERT OR IGNORE INTO temp.processing_queue (observation_id)
-            VALUES ($observation_id)
-            """);
-        var idParameter = enqueue.Parameters.Add("$observation_id", SqliteType.Integer);
-        await ForEachNeighborAsync(
-            connection,
-            transaction,
-            instrument,
-            point,
-            epsilonMeters,
-            timeScaleMetersPerDay,
-            async neighborId =>
-            {
-                if (neighborId == point.ObservationId)
-                {
-                    return true;
-                }
-
-                idParameter.Value = neighborId;
-                await enqueue.ExecuteNonQueryAsync();
-                return true;
-            });
-    }
-
-    private static async Task ForEachNeighborAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        string instrument,
-        ProcessingPoint point,
-        double epsilonMeters,
-        double timeScaleMetersPerDay,
-        Func<long, Task<bool>> visit)
-    {
-        var envelope = SpatialMath.EnvelopeForRadius(
-            point.Latitude,
-            point.Longitude,
-            epsilonMeters);
-        var intervals = envelope.LongitudeIntervals;
-        var windowMicroseconds = (long)Math.Ceiling(
-            epsilonMeters / timeScaleMetersPerDay * MicrosecondsPerDay);
-        var minTime = point.AcquiredAtUtcUs < long.MinValue + windowMicroseconds
-            ? long.MinValue
-            : point.AcquiredAtUtcUs - windowMicroseconds;
-        var maxTime = point.AcquiredAtUtcUs > long.MaxValue - windowMicroseconds
-            ? long.MaxValue
-            : point.AcquiredAtUtcUs + windowMicroseconds;
-        var command = CreateCommand(
-            connection,
-            transaction,
-            """
-            SELECT p.observation_id, p.acquired_at_utc_us, p.latitude, p.longitude
-            FROM observation_rtree AS r
-            JOIN temp.processing_points AS p ON p.observation_id = r.observation_id
-            WHERE p.instrument = $instrument
-              AND p.acquired_at_utc_us BETWEEN $min_time AND $max_time
-              AND r.min_latitude <= $north AND r.max_latitude >= $south
-              AND ((r.min_longitude <= $east0 AND r.max_longitude >= $west0)
-                   OR ($has_second = 1
-                       AND r.min_longitude <= $east1 AND r.max_longitude >= $west1))
-            """);
-        command.Parameters.AddWithValue("$instrument", instrument);
-        command.Parameters.AddWithValue("$min_time", minTime);
-        command.Parameters.AddWithValue("$max_time", maxTime);
-        command.Parameters.AddWithValue("$south", envelope.South);
-        command.Parameters.AddWithValue("$north", envelope.North);
-        command.Parameters.AddWithValue("$west0", intervals[0].West);
-        command.Parameters.AddWithValue("$east0", intervals[0].East);
-        command.Parameters.AddWithValue("$has_second", intervals.Count > 1 ? 1 : 0);
-        command.Parameters.AddWithValue("$west1", intervals.Count > 1 ? intervals[1].West : 0);
-        command.Parameters.AddWithValue("$east1", intervals.Count > 1 ? intervals[1].East : 0);
-
-        await using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
-        {
-            var observationId = reader.GetInt64(0);
-            var candidateTime = reader.GetInt64(1);
-            var candidateLatitude = reader.GetDouble(2);
-            var candidateLongitude = reader.GetDouble(3);
-            var distance = SpatialMath.DistanceMeters(
-                point.Latitude,
-                point.Longitude,
-                candidateLatitude,
-                candidateLongitude);
-            var elapsedDays = Math.Abs(
-                (candidateTime - (double)point.AcquiredAtUtcUs) / MicrosecondsPerDay);
-            var temporalDistance = elapsedDays * timeScaleMetersPerDay;
-            if (distance * distance + temporalDistance * temporalDistance <= epsilonMeters * epsilonMeters &&
-                !await visit(observationId))
-            {
-                break;
-            }
-        }
-    }
-
-    private static async Task<ProcessingPoint?> ReadNextPointAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        string instrument,
-        long afterId)
-    {
-        await using var command = CreateCommand(
-            connection,
-            transaction,
-            """
-            SELECT observation_id, acquired_at_utc_us, latitude, longitude, visited, cluster_id
-            FROM temp.processing_points
-            WHERE instrument = $instrument AND observation_id > $after_id
-            ORDER BY observation_id LIMIT 1
-            """);
-        command.Parameters.AddWithValue("$instrument", instrument);
-        command.Parameters.AddWithValue("$after_id", afterId);
-        await using var reader = await command.ExecuteReaderAsync();
-        if (!await reader.ReadAsync())
-        {
-            return null;
-        }
-
-        return ReadPoint(reader);
-    }
-
-    private static async Task<ProcessingPoint> ReadPointAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        long observationId)
-    {
-        await using var command = CreateCommand(
-            connection,
-            transaction,
-            """
-            SELECT observation_id, acquired_at_utc_us, latitude, longitude, visited, cluster_id
-            FROM temp.processing_points WHERE observation_id = $id
-            """);
-        command.Parameters.AddWithValue("$id", observationId);
-        await using var reader = await command.ExecuteReaderAsync();
-        if (!await reader.ReadAsync())
-        {
-            throw new InvalidOperationException($"Processing point {observationId} disappeared.");
-        }
-
-        return ReadPoint(reader);
-    }
-
-    private static ProcessingPoint ReadPoint(SqliteDataReader reader) =>
-        new(
-            reader.GetInt64(0),
-            reader.GetInt64(1),
-            reader.GetDouble(2),
-            reader.GetDouble(3),
-            reader.GetInt32(4) != 0,
-            reader.GetInt32(5));
-
-    private static async Task UpdatePointStateAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        long observationId,
-        bool? visited = null,
-        int? clusterId = null,
-        bool? isCorePoint = null)
-    {
-        var assignments = new List<string>();
-        var command = CreateCommand(connection, transaction, string.Empty);
-        if (visited.HasValue)
-        {
-            assignments.Add("visited = $visited");
-            command.Parameters.AddWithValue("$visited", visited.Value ? 1 : 0);
-        }
-
-        if (clusterId.HasValue)
-        {
-            assignments.Add("cluster_id = $cluster_id");
-            command.Parameters.AddWithValue("$cluster_id", clusterId.Value);
-        }
-
-        if (isCorePoint.HasValue)
-        {
-            assignments.Add("is_core_point = $is_core_point");
-            command.Parameters.AddWithValue("$is_core_point", isCorePoint.Value ? 1 : 0);
-        }
-
-        if (assignments.Count == 0)
-        {
-            throw new ArgumentException("At least one point state value must be provided.");
-        }
-
-        command.CommandText =
-            $"UPDATE temp.processing_points SET {string.Join(", ", assignments)} WHERE observation_id = $id";
-        command.Parameters.AddWithValue("$id", observationId);
-        await command.ExecuteNonQueryAsync();
-    }
-
-    private static async Task<long?> DequeueAsync(
-        SqliteConnection connection,
-        SqliteTransaction transaction)
-    {
-        long queueId;
-        long observationId;
-        await using (var command = CreateCommand(
-                         connection,
-                         transaction,
-                         """
-                         SELECT queue_id, observation_id
-                         FROM temp.processing_queue ORDER BY queue_id LIMIT 1
-                         """))
-        await using (var reader = await command.ExecuteReaderAsync())
-        {
-            if (!await reader.ReadAsync())
-            {
-                return null;
-            }
-
-            queueId = reader.GetInt64(0);
-            observationId = reader.GetInt64(1);
-        }
-
-        await using var delete = CreateCommand(
-            connection,
-            transaction,
-            "DELETE FROM temp.processing_queue WHERE queue_id = $id");
-        delete.Parameters.AddWithValue("$id", queueId);
-        await delete.ExecuteNonQueryAsync();
-        return observationId;
-    }
+            minPoints);
 
     private static async Task PersistMembershipsAsync(
         SqliteConnection connection,
@@ -1019,11 +672,4 @@ internal static class ProcessingCommands
         return command;
     }
 
-    private readonly record struct ProcessingPoint(
-        long ObservationId,
-        long AcquiredAtUtcUs,
-        double Latitude,
-        double Longitude,
-        bool Visited,
-        int ClusterId);
 }

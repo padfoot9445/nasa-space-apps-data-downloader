@@ -141,6 +141,154 @@ public sealed class ProcessingPipelineTests
         }
     }
 
+    [Fact]
+    public async Task ProcessesNeighborhoodsLargerThanOneQueueBatch()
+    {
+        var databasePath = NewDatabasePath();
+        try
+        {
+            await CreateDatabaseWithSourceAsync(databasePath, 1_040);
+            await using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+            {
+                await connection.OpenAsync();
+                long recordNumber = 0;
+                var acquiredAt = SpatialMath.ToUnixMicroseconds(
+                    new DateTimeOffset(2024, 6, 1, 12, 0, 0, TimeSpan.Zero));
+                foreach (var instrument in new[] { "MODIS", "VIIRS" })
+                {
+                    for (var index = 0; index < 520; index++)
+                    {
+                        recordNumber++;
+                        await InsertObservationAsync(
+                            connection,
+                            recordNumber,
+                            instrument,
+                            acquiredAt + index * 1_000_000,
+                            37,
+                            -119.9,
+                            1,
+                            scan: 1);
+                    }
+                }
+            }
+
+            Assert.Equal(0, await Commands.RunAsync(
+            [
+                "process",
+                "--database", databasePath,
+                "--epsilon-m", "2000",
+                "--time-scale-m-per-day", "1500",
+                "--min-points", "2"
+            ]));
+
+            await using var results = new SqliteConnection($"Data Source={databasePath}");
+            await results.OpenAsync();
+            Assert.Equal(1_040L, await ScalarLongAsync(
+                results,
+                "SELECT COUNT(*) FROM cluster_memberships WHERE preprocessing_run_id = 1 AND cluster_id IS NOT NULL"));
+            Assert.Equal(2L, await ScalarLongAsync(
+                results,
+                "SELECT COUNT(*) FROM processing_events WHERE preprocessing_run_id = 1 AND observation_count = 520"));
+        }
+        finally
+        {
+            DeleteDatabaseFiles(databasePath);
+        }
+    }
+
+    [Fact]
+    public async Task AssignsPreviouslyNoisyPointAsBorderAndRetainsIsolatedNoise()
+    {
+        var databasePath = NewDatabasePath();
+        try
+        {
+            await CreateDatabaseWithSourceAsync(databasePath, 5);
+            await using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+            {
+                await connection.OpenAsync();
+                var acquiredAt = SpatialMath.ToUnixMicroseconds(
+                    new DateTimeOffset(2024, 6, 1, 12, 0, 0, TimeSpan.Zero));
+                var points = new[]
+                {
+                    (Latitude: 37.0, Longitude: 0.0012),
+                    (Latitude: 37.0, Longitude: -0.0004),
+                    (Latitude: 37.0, Longitude: 0.0),
+                    (Latitude: 37.0, Longitude: 0.0004),
+                    (Latitude: 38.0, Longitude: 1.0)
+                };
+                for (var index = 0; index < points.Length; index++)
+                {
+                    await InsertObservationAsync(
+                        connection,
+                        index + 1,
+                        "MODIS",
+                        acquiredAt,
+                        points[index].Latitude,
+                        points[index].Longitude,
+                        1,
+                        scan: 1);
+                }
+            }
+
+            Assert.Equal(0, await Commands.RunAsync(
+            [
+                "process",
+                "--database", databasePath,
+                "--epsilon-m", "100",
+                "--time-scale-m-per-day", "1500",
+                "--min-points", "3"
+            ]));
+
+            await using var results = new SqliteConnection($"Data Source={databasePath}");
+            await results.OpenAsync();
+            Assert.Equal(4L, await ScalarLongAsync(
+                results,
+                """
+                SELECT COUNT(*) FROM cluster_memberships
+                WHERE preprocessing_run_id = 1 AND cluster_id > 0
+                """));
+            Assert.Equal(1L, await ScalarLongAsync(
+                results,
+                """
+                SELECT COUNT(*) FROM cluster_memberships
+                WHERE preprocessing_run_id = 1 AND cluster_id IS NULL
+                """));
+            Assert.Equal(1L, await ScalarLongAsync(
+                results,
+                """
+                SELECT COUNT(*) FROM cluster_memberships
+                WHERE preprocessing_run_id = 1 AND is_core_point = 0 AND cluster_id > 0
+                """));
+        }
+        finally
+        {
+            DeleteDatabaseFiles(databasePath);
+        }
+    }
+
+    private static async Task CreateDatabaseWithSourceAsync(string databasePath, long recordCount)
+    {
+        await using var connection = new SqliteConnection($"Data Source={databasePath}");
+        await connection.OpenAsync();
+        await using (var schema = connection.CreateCommand())
+        {
+            schema.CommandText = await File.ReadAllTextAsync(
+                Path.Combine(AppContext.BaseDirectory, "schema.sql"));
+            await schema.ExecuteNonQueryAsync();
+        }
+
+        await using var source = connection.CreateCommand();
+        source.CommandText =
+            """
+            INSERT INTO source_files (
+                source_path, source_name, product, sha256, imported_at_utc_us,
+                importer_version, schema_version, record_count, accepted_count, error_count
+            ) VALUES ('fixture', 'fixture.json', 'test', 'fixture', 0, 'test', 2, $count, $count, 0)
+            """;
+        source.Parameters.AddWithValue("$count", recordCount);
+        await source.ExecuteNonQueryAsync();
+    }
+
     private static async Task SeedProcessingDatabaseAsync(string databasePath)
     {
         await using var connection = new SqliteConnection($"Data Source={databasePath}");

@@ -1,0 +1,15 @@
+**
+!Dockerfile
+!dotnet/
+!dotnet/FireData.Api/
+!dotnet/FireData.Api/**
+!dotnet/FireData.Cli/
+!dotnet/FireData.Cli/**
+!sqlite/
+!sqlite/schema.sql
+!sqlite/migrations/
+!sqlite/migrations/002_processing.sql
+dotnet/FireData.Api/bin/
+dotnet/FireData.Api/obj/
+dotnet/FireData.Cli/bin/
+dotnet/FireData.Cli/obj/
