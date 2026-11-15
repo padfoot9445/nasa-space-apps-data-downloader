@@ -17,6 +17,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddDbContext<FireDataContext>(options => options.UseSqlite(connectionString));
 builder.Services.AddScoped<IObservationSearchService, ObservationSearchService>();
+builder.Services.AddScoped<IObservationTimeSeriesService, ObservationTimeSeriesService>();
 
 var app = builder.Build();
 

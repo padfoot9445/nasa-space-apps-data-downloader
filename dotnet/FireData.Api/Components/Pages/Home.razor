@@ -21,7 +21,7 @@
                 <p class="subtitle">Search satellite fire detections by when, where, and how they were observed.</p>
             </div>
             <div class="result-summary" aria-live="polite">
-                <strong>@_observations.Count.ToString("N0", CultureInfo.InvariantCulture)</strong>
+                <strong>@_loadedObservationCount.ToString("N0", CultureInfo.InvariantCulture)</strong>
                 <span>detections loaded</span>
             </div>
         </section>
@@ -165,6 +165,50 @@
                 <div id="fire-map" class="fire-map" role="application" aria-label="Map of fire detections"></div>
                 <p class="map-attribution">Map © OpenStreetMap contributors · Markers show the currently loaded results</p>
 
+                <section class="time-series-panel" aria-labelledby="time-series-title">
+                    <div class="time-series-toolbar">
+                        <div>
+                            <p class="eyebrow">DAILY DETECTIONS</p>
+                            <h2 id="time-series-title">Fire activity over time</h2>
+                        </div>
+                        <label class="scale-control">
+                            <span>VIIRS scale</span>
+                            <div>
+                                <input type="number" min="0" step="any" @bind="_viirsScale" @bind:event="oninput" @bind:after="UpdateTimeSeriesScaleAsync" aria-label="VIIRS display multiplier" />
+                                <span>× MODIS</span>
+                            </div>
+                        </label>
+                    </div>
+                    <p class="time-series-note">Counts use the selected filters. VIIRS is scaled for display only; both series remain sensor detection counts.</p>
+                    <div id="time-series-chart" class="time-series-chart-container @(_timeSeriesCount == 0 ? "chart-container-hidden" : "")"></div>
+                    @if (!string.IsNullOrWhiteSpace(_timeSeriesError))
+                    {
+                        <div class="alert error-alert" role="alert">
+                            <strong>Time series unavailable</strong>
+                            <span>@_timeSeriesError</span>
+                        </div>
+                    }
+                    else if (_timeSeriesLoading)
+                    {
+                        <div class="chart-empty">Loading daily counts…</div>
+                    }
+                    else if (_timeSeriesCount > 0)
+                    {
+                        <div class="chart-legend">
+                            <span><i class="legend-line modis-line"></i> MODIS</span>
+                            <span><i class="legend-line viirs-line"></i> VIIRS × @ViirsScale.ToString("0.##", CultureInfo.InvariantCulture)</span>
+                        </div>
+                    }
+                    else if (_hasSearched)
+                    {
+                        <div class="chart-empty">No daily detections match these filters.</div>
+                    }
+                    else
+                    {
+                        <div class="chart-empty">Search to load daily MODIS and VIIRS detection counts.</div>
+                    }
+                </section>
+
                 @if (!string.IsNullOrWhiteSpace(_error))
                 {
                     <div class="alert error-alert" role="alert">
@@ -181,7 +225,7 @@
                 {
                     <div class="results-toolbar">
                         <div>
-                            <h3>Loaded detections <span class="count-pill">@_observations.Count.ToString("N0", CultureInfo.InvariantCulture)</span></h3>
+                            <h3>Loaded detections <span class="count-pill">@_loadedObservationCount.ToString("N0", CultureInfo.InvariantCulture)</span></h3>
                             <p>Page results are capped by the API; load another page to add more markers.</p>
                         </div>
                         @if (_nextPageUrl is not null)
@@ -206,9 +250,9 @@
                                 </div>
                             </article>
                         }
-                        @if (_observations.Count > 12)
+                        @if (_loadedObservationCount > _observations.Count)
                         {
-                            <p class="list-note">Showing the first 12 detections here; all @_observations.Count.ToString("N0", CultureInfo.InvariantCulture) loaded detections are on the map.</p>
+                            <p class="list-note">Showing the first @_observations.Count.ToString("N0", CultureInfo.InvariantCulture) detections here; all @_loadedObservationCount.ToString("N0", CultureInfo.InvariantCulture) loaded detections are on the map.</p>
                         }
                     </div>
                 }
@@ -231,9 +275,13 @@
     private IJSObjectReference? _mapModule;
     private string? _error;
     private string? _mapError;
+    private string? _timeSeriesError;
     private string? _baseSearchUrl;
     private string? _nextPageUrl;
+    private int _loadedObservationCount;
+    private int _timeSeriesCount;
     private bool _isLoading;
+    private bool _timeSeriesLoading;
     private bool _hasSearched;
     private string _areaMode = "none";
     private DateOnly? _dateFrom;
@@ -255,6 +303,30 @@
     private double? _brightnessMax;
     private double? _frpMin;
     private double? _frpMax;
+    private double? _viirsScale = 5;
+
+    private double ViirsScale =>
+        _viirsScale is { } scale && double.IsFinite(scale) && scale >= 0 ? scale : 5;
+
+    private async Task UpdateTimeSeriesScaleAsync()
+    {
+        if (_mapModule is null || _timeSeriesCount == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await _mapModule.InvokeVoidAsync(
+                "setTimeSeriesScale",
+                "time-series-chart",
+                ViirsScale);
+        }
+        catch (JSException exception)
+        {
+            _timeSeriesError = $"The time-series chart could not be updated: {exception.Message}";
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -282,7 +354,11 @@
         _baseSearchUrl = null;
         _nextPageUrl = null;
         _observations.Clear();
-        await UpdateMapAsync();
+        _loadedObservationCount = 0;
+        _timeSeriesCount = 0;
+        _timeSeriesError = null;
+        await ClearTimeSeriesAsync();
+        await ClearMapAsync();
 
         if (!TryBuildSearchUrl(out var url, out var validationError))
         {
@@ -292,6 +368,56 @@
 
         _baseSearchUrl = url;
         await FetchPageAsync(url, append: false);
+        if (_error is null)
+        {
+            await FetchTimeSeriesAsync(url);
+        }
+    }
+
+    private async Task FetchTimeSeriesAsync(string searchUrl)
+    {
+        _timeSeriesLoading = true;
+        _timeSeriesError = null;
+        _timeSeriesCount = 0;
+        try
+        {
+            if (_mapModule is null)
+            {
+                _timeSeriesError = "The search interface is still initializing. Please try again.";
+                return;
+            }
+
+            await _mapModule.InvokeVoidAsync("clearTimeSeries", "time-series-chart");
+            var queryIndex = searchUrl.IndexOf('?');
+            var timeSeriesUrl = "api/observations/timeseries" +
+                                (queryIndex >= 0 ? searchUrl[queryIndex..] : "");
+            var response = await _mapModule.InvokeAsync<ApiTimeSeriesFetchResult>(
+                "fetchTimeSeries",
+                "time-series-chart",
+                timeSeriesUrl,
+                ViirsScale);
+            if (!response.Success)
+            {
+                _timeSeriesError = response.StatusCode == 0
+                    ? $"Could not reach the time-series API: {response.Body}"
+                    : DescribeApiError((HttpStatusCode)response.StatusCode, response.Body);
+                return;
+            }
+
+            _timeSeriesCount = response.PointCount;
+        }
+        catch (JSException exception)
+        {
+            _timeSeriesError = $"Could not query the time-series API: {exception.Message}";
+        }
+        catch (JsonException exception)
+        {
+            _timeSeriesError = $"The time-series response could not be read: {exception.Message}";
+        }
+        finally
+        {
+            _timeSeriesLoading = false;
+        }
     }
 
     private async Task LoadNextPageAsync()
@@ -316,7 +442,10 @@
                 return;
             }
 
-            var response = await _mapModule.InvokeAsync<ApiFetchResult>("fetchObservations", url);
+            var response = await _mapModule.InvokeAsync<ApiFetchResult>(
+                "fetchObservations",
+                url,
+                append);
             if (!response.Success)
             {
                 if (response.StatusCode == 0)
@@ -329,22 +458,14 @@
                 return;
             }
 
-            var page = JsonSerializer.Deserialize<ObservationSearchResponse>(
-                response.Body,
-                new JsonSerializerOptions(JsonSerializerDefaults.Web));
-            if (page is null)
-            {
-                _error = "The API returned an empty or invalid response.";
-                return;
-            }
-
             if (!append)
             {
                 _observations.Clear();
             }
-            _observations.AddRange(page.Items);
-            _nextPageUrl = page.Next is null ? null : BuildNextPageUrl(page.Next);
-            await UpdateMapAsync();
+            var remainingVisibleItems = Math.Max(0, 12 - _observations.Count);
+            _observations.AddRange(response.Items.Take(remainingVisibleItems));
+            _loadedObservationCount = response.TotalCount;
+            _nextPageUrl = response.Next is null ? null : BuildNextPageUrl(response.Next);
         }
         catch (JSException exception)
         {
@@ -469,12 +590,34 @@
         _west = _south = _east = _north = null;
         _centerLatitude = _centerLongitude = _radiusMeters = null;
         _brightnessMin = _brightnessMax = _frpMin = _frpMax = null;
+        _viirsScale = 5;
         _observations.Clear();
+        _loadedObservationCount = 0;
+        _timeSeriesCount = 0;
         _baseSearchUrl = null;
         _nextPageUrl = null;
         _error = null;
+        _timeSeriesError = null;
         _hasSearched = false;
-        await UpdateMapAsync();
+        await ClearTimeSeriesAsync();
+        await ClearMapAsync();
+    }
+
+    private async Task ClearTimeSeriesAsync()
+    {
+        if (_mapModule is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _mapModule.InvokeVoidAsync("clearTimeSeries", "time-series-chart");
+        }
+        catch (JSException exception)
+        {
+            _timeSeriesError = $"The time-series chart could not be cleared: {exception.Message}";
+        }
     }
 
     private static string DescribeApiError(HttpStatusCode statusCode, string body)
@@ -511,7 +654,7 @@
         return $"The observation API returned {(int)statusCode} {statusCode}.";
     }
 
-    private async Task UpdateMapAsync()
+    private async Task ClearMapAsync()
     {
         if (_mapModule is null)
         {
@@ -520,11 +663,11 @@
 
         try
         {
-            await _mapModule.InvokeVoidAsync("setObservations", _observations);
+            await _mapModule.InvokeVoidAsync("clearObservations");
         }
         catch (JSException exception)
         {
-            _mapError = $"Map markers could not be updated: {exception.Message}";
+            _mapError = $"Map markers could not be cleared: {exception.Message}";
         }
     }
 
@@ -543,5 +686,16 @@
         }
     }
 
-    private sealed record ApiFetchResult(bool Success, int StatusCode, string Body);
+    private sealed record ApiFetchResult(
+        bool Success,
+        int StatusCode,
+        string Body,
+        IReadOnlyList<ObservationResponse> Items,
+        ObservationCursorResponse? Next,
+        int TotalCount);
+    private sealed record ApiTimeSeriesFetchResult(
+        bool Success,
+        int StatusCode,
+        string Body,
+        int PointCount);
 }

@@ -16,10 +16,7 @@ public sealed class ObservationSearchService(FireDataContext context) : IObserva
         CancellationToken cancellationToken)
     {
         var pageSize = request.PageSize ?? 100;
-        var query = context.Observations.AsNoTracking();
-        var radiusFilter = AddAreaFilter(context, ref query, request);
-        query = ApplyPropertyFilters(query, request);
-        query = ApplyDateAndTimeFilters(query, request);
+        var (query, radiusFilter) = BuildFilteredQuery(context, request);
 
         if (request is { AfterAcquiredAt: { } cursorTime, AfterObservationId: { } cursorId })
         {
@@ -64,6 +61,18 @@ public sealed class ObservationSearchService(FireDataContext context) : IObserva
         }
 
         return new ObservationSearchResponse(matches, next);
+    }
+
+    internal static (
+        IQueryable<Observation> Query,
+        (double Latitude, double Longitude, double RadiusMeters)? RadiusFilter)
+        BuildFilteredQuery(FireDataContext context, ObservationSearchRequest request)
+    {
+        var query = context.Observations.AsNoTracking();
+        var radiusFilter = AddAreaFilter(context, ref query, request);
+        query = ApplyPropertyFilters(query, request);
+        query = ApplyDateAndTimeFilters(query, request);
+        return (query, radiusFilter);
     }
 
     private static IQueryable<Observation> ApplyPropertyFilters(

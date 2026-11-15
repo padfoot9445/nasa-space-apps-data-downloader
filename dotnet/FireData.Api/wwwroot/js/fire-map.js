@@ -1,22 +1,115 @@
 const maps = new Map();
+const timeSeriesByElement = new Map();
 
-export async function fetchObservations(url) {
+export async function fetchObservations(url, append) {
     try {
         const response = await fetch(new URL(url, window.location.href), {
             headers: { Accept: "application/json" }
         });
+        const body = await response.text();
+        if (!response.ok) {
+            return {
+                success: false,
+                statusCode: response.status,
+                body: body.slice(0, 2000),
+                items: [],
+                next: null,
+                totalCount: 0
+            };
+        }
+
+        const page = JSON.parse(body);
+        if (!Array.isArray(page.items) ||
+            (page.next !== null && typeof page.next !== "object")) {
+            throw new Error("The observation API returned an invalid response.");
+        }
+
+        const entry = maps.get("fire-map");
+        if (!entry) {
+            throw new Error("The observation map is not initialized.");
+        }
+
+        entry.observations = append
+            ? entry.observations.concat(page.items)
+            : page.items;
+        renderObservations(entry);
         return {
-            success: response.ok,
+            success: true,
             statusCode: response.status,
-            body: await response.text()
+            body: "",
+            items: page.items.slice(0, 12),
+            next: page.next,
+            totalCount: entry.observations.length
         };
     } catch (error) {
         return {
             success: false,
             statusCode: 0,
-            body: error instanceof Error ? error.message : String(error)
+            body: error instanceof Error ? error.message : String(error),
+            items: [],
+            next: null,
+            totalCount: 0
         };
     }
+}
+
+export async function fetchTimeSeries(elementId, url, scale) {
+    try {
+        const response = await fetch(new URL(url, window.location.href), {
+            headers: { Accept: "application/json" }
+        });
+        const body = await response.text();
+        if (!response.ok) {
+            return {
+                success: false,
+                statusCode: response.status,
+                body: body.slice(0, 2000),
+                pointCount: 0
+            };
+        }
+
+        const points = JSON.parse(body);
+        if (!Array.isArray(points) || points.some(point =>
+            typeof point.date !== "string" ||
+            !Number.isFinite(point.modisCount) ||
+            !Number.isFinite(point.viirsCount) ||
+            point.modisCount < 0 ||
+            point.viirsCount < 0)) {
+            throw new Error("The time-series API returned an invalid response.");
+        }
+
+        const entry = { points, scale: normalizeScale(scale) };
+        timeSeriesByElement.set(elementId, entry);
+        renderTimeSeries(elementId, entry);
+        return {
+            success: true,
+            statusCode: response.status,
+            body: "",
+            pointCount: points.length
+        };
+    } catch (error) {
+        return {
+            success: false,
+            statusCode: 0,
+            body: error instanceof Error ? error.message : String(error),
+            pointCount: 0
+        };
+    }
+}
+
+export function setTimeSeriesScale(elementId, scale) {
+    const entry = timeSeriesByElement.get(elementId);
+    if (!entry) {
+        throw new Error("No time-series data is loaded for the requested chart.");
+    }
+
+    entry.scale = normalizeScale(scale);
+    renderTimeSeries(elementId, entry);
+}
+
+export function clearTimeSeries(elementId) {
+    timeSeriesByElement.delete(elementId);
+    document.getElementById(elementId)?.replaceChildren();
 }
 
 export function initialize(elementId) {
@@ -42,17 +135,24 @@ export function initialize(elementId) {
 
     maps.set(elementId, {
         map,
-        markers: window.L.layerGroup().addTo(map)
+        markers: window.L.layerGroup().addTo(map),
+        observations: []
     });
     window.setTimeout(() => map.invalidateSize(), 100);
 }
 
-export function setObservations(observations) {
+export function clearObservations() {
     const entry = maps.get("fire-map");
     if (!entry) {
         return;
     }
 
+    entry.observations = [];
+    entry.markers.clearLayers();
+}
+
+function renderObservations(entry) {
+    const observations = entry.observations;
     entry.markers.clearLayers();
     const locations = [];
     for (const observation of observations) {
@@ -99,4 +199,86 @@ function createPopup(observation) {
     coordinates.textContent = `${Number(observation.latitude).toFixed(4)}, ${Number(observation.longitude).toFixed(4)}`;
     content.append(title, time, details, coordinates);
     return content;
+}
+
+function normalizeScale(scale) {
+    return Number.isFinite(scale) && scale >= 0 ? scale : 5;
+}
+
+function renderTimeSeries(elementId, entry) {
+    const container = document.getElementById(elementId);
+    if (!container) {
+        throw new Error("The time-series chart element is missing.");
+    }
+
+    const namespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(namespace, "svg");
+    svg.setAttribute("class", "time-series-chart");
+    svg.setAttribute("viewBox", "0 0 1000 300");
+    svg.setAttribute("role", "img");
+    svg.setAttribute(
+        "aria-label",
+        `Daily MODIS detections and VIIRS detections scaled by ${entry.scale}`);
+
+    const title = document.createElementNS(namespace, "title");
+    title.textContent = "Daily observation counts; VIIRS scaled client-side.";
+    svg.append(title);
+
+    const maximum = entry.points.reduce(
+        (current, point) => Math.max(current, point.modisCount, point.viirsCount * entry.scale),
+        1);
+    appendSvgElement(svg, "line", { x1: 36, y1: 30, x2: 980, y2: 30, class: "chart-grid" });
+    appendSvgElement(svg, "line", { x1: 36, y1: 135, x2: 980, y2: 135, class: "chart-grid" });
+    appendSvgElement(svg, "line", { x1: 36, y1: 240, x2: 980, y2: 240, class: "chart-axis" });
+    appendSvgElement(
+        svg,
+        "text",
+        { x: 30, y: 35, "text-anchor": "end", class: "chart-label" },
+        new Intl.NumberFormat().format(maximum));
+    appendSvgElement(
+        svg,
+        "text",
+        { x: 30, y: 245, "text-anchor": "end", class: "chart-label" },
+        "0");
+    appendSvgElement(
+        svg,
+        "polyline",
+        { points: makeChartPath(entry.points, maximum, false), class: "chart-modis" });
+    appendSvgElement(
+        svg,
+        "polyline",
+        { points: makeChartPath(entry.points, maximum, true, entry.scale), class: "chart-viirs" });
+    appendSvgElement(
+        svg,
+        "text",
+        { x: 36, y: 276, class: "chart-label" },
+        entry.points[0]?.date ?? "");
+    appendSvgElement(
+        svg,
+        "text",
+        { x: 980, y: 276, "text-anchor": "end", class: "chart-label" },
+        entry.points.at(-1)?.date ?? "");
+
+    container.replaceChildren(svg);
+}
+
+function makeChartPath(points, maximum, viirs, scale = 1) {
+    const lastIndex = points.length - 1;
+    return points.map((point, index) => {
+        const x = lastIndex === 0 ? 508 : 36 + 944 * index / lastIndex;
+        const count = viirs ? point.viirsCount * scale : point.modisCount;
+        const y = 240 - 210 * count / maximum;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+    }).join(" ");
+}
+
+function appendSvgElement(svg, name, attributes, text = null) {
+    const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+    for (const [attribute, value] of Object.entries(attributes)) {
+        element.setAttribute(attribute, value);
+    }
+    if (text !== null) {
+        element.textContent = text;
+    }
+    svg.append(element);
 }

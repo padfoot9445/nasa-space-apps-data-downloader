@@ -88,6 +88,29 @@ select { cursor: pointer; }
 .fire-popup { display: grid; gap: 4px; min-width: 190px; color: #1e282e; font: 11px "DM Sans", sans-serif; }
 .fire-popup strong { font-size: 13px; }
 .leaflet-popup-content-wrapper { border-radius: 8px; }
+.time-series-panel { padding: 18px 18px 10px; border-top: 1px solid var(--line); }
+.time-series-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.time-series-toolbar h2 { margin: 0; font: 600 17px "Space Grotesk", sans-serif; }
+.time-series-toolbar .eyebrow { margin-bottom: 4px; }
+.scale-control { flex: 0 0 138px; }
+.scale-control > div { display: flex; align-items: center; gap: 7px; color: #a3b0b7; font: 10px "DM Mono", monospace; }
+.scale-control input { height: 32px; }
+.time-series-note { margin: 10px 0 4px; color: #84939b; font-size: 10px; }
+.chart-legend { display: flex; gap: 14px; justify-content: flex-end; color: #a5b1b8; font: 10px "DM Mono", monospace; }
+.chart-legend span { display: flex; align-items: center; gap: 6px; }
+.legend-line { display: inline-block; width: 15px; height: 3px; border-radius: 2px; }
+.modis-line { background: var(--orange); }
+.viirs-line { background: var(--gold); }
+.time-series-chart-container { min-width: 0; }
+.chart-container-hidden { display: none !important; }
+.time-series-chart { display: block; width: 100%; height: auto; margin: 4px 0 0; overflow: visible; }
+.chart-grid { stroke: #2a3841; stroke-width: 1; stroke-dasharray: 4 5; }
+.chart-axis { stroke: #52616a; stroke-width: 1; }
+.chart-label { fill: #83929a; font: 11px "DM Mono", monospace; }
+.chart-modis, .chart-viirs { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.chart-modis { stroke: var(--orange); }
+.chart-viirs { stroke: var(--gold); }
+.chart-empty { min-height: 120px; display: grid; place-items: center; color: #8998a0; text-align: center; font-size: 11px; }
 .results-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 17px 18px 12px; }
 .results-toolbar h3 { margin: 0; font: 600 14px "Space Grotesk", sans-serif; }
 .results-toolbar p { margin: 4px 0 0; color: #87959d; font-size: 10px; }
@@ -136,4 +159,7 @@ footer span { padding: 0 6px; color: #bd785f; }
     .filter-panel { order: 1; }
     .results-panel { order: 2; }
     .fire-map { height: 52vh; min-height: 330px; }
+    .time-series-panel { padding-right: 12px; padding-left: 12px; }
+    .time-series-toolbar h2 { font-size: 15px; }
+    .scale-control { flex-basis: 120px; }
 }

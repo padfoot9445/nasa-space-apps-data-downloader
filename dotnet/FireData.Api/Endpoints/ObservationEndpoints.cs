@@ -23,7 +23,35 @@ public static class ObservationEndpoints
             .Produces<ObservationSearchResponse>()
             .ProducesValidationProblem();
 
+        endpoints.MapGet("/api/observations/timeseries", GetTimeSeriesAsync)
+            .WithName("GetObservationTimeSeries")
+            .WithTags("Observations")
+            .WithSummary("Get daily MODIS and VIIRS detection counts")
+            .WithDescription(
+                "Returns daily UTC observation counts using the same date, time, area, and " +
+                "sensor-property filters as the observation search endpoint. These are " +
+                "detections, not estimates of unique fire events.")
+            .Produces<IReadOnlyList<ObservationTimeSeriesPoint>>()
+            .ProducesValidationProblem();
+
         return endpoints;
+    }
+
+    private static async Task<Results<Ok<IReadOnlyList<ObservationTimeSeriesPoint>>, ValidationProblem>>
+        GetTimeSeriesAsync(
+            [AsParameters] ObservationSearchRequest request,
+            HttpRequest httpRequest,
+            IObservationTimeSeriesService service,
+            CancellationToken cancellationToken)
+    {
+        var errors = ObservationSearchRequestValidator.Validate(request, httpRequest.Query);
+        if (errors.Count != 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var response = await service.GetAsync(request, cancellationToken);
+        return TypedResults.Ok(response);
     }
 
     private static async Task<Results<Ok<ObservationSearchResponse>, ValidationProblem>> SearchAsync(

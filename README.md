@@ -360,6 +360,32 @@ page adds those detections to the map. Leaflet, fonts, and map tiles are served
 by public CDN/tile services, so an internet connection is required to show the
 map.
 
-For local development without Docker, run
-`dotnet run --project dotnet/FireData.Api --urls http://localhost:5080` and
-open the same URL.
+Below the map, the daily time-series chart uses the same filters and shows
+observation counts by UTC date. VIIRS is multiplied by 5 by default for display
+only; the scale is adjustable in the browser and does not change API results.
+These counts are satellite detections, not estimates of unique fire events.
+The API endpoint `/api/observations/timeseries` returns the unscaled MODIS and
+VIIRS counts, aggregated in SQLite.
+
+### Run Firewatch locally without Docker
+
+With the .NET 11 SDK installed, start the API and UI directly from the
+repository root:
+
+```bash
+./scripts/run-firewatch-local.sh
+```
+
+The script waits for the page to become available, opens the browser, and keeps
+the server running in the foreground; press Ctrl+C to stop it. It opens the
+default `data/fire-observations.sqlite` read-only. You can specify a database
+file, suppress automatic browser launch, or select a different local port:
+
+```bash
+./scripts/run-firewatch-local.sh /absolute/path/fire-observations.sqlite
+./scripts/run-firewatch-local.sh --no-browser
+FIREDATA_PORT=5082 ./scripts/run-firewatch-local.sh
+```
+
+This local launcher does not use Docker. The Docker and PowerShell launchers
+above remain available when a container runtime is installed.

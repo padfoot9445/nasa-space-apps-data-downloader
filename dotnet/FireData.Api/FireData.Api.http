@@ -12,6 +12,9 @@ GET {{baseUrl}}/api/observations?centerLatitude=38&centerLongitude=-122&radiusMe
 ### MODIS hotspot type
 GET {{baseUrl}}/api/observations?type=VEGETATION_FIRE&satellite=TERRA&pageSize=25
 
+### Daily unscaled sensor detection counts with the same search filters
+GET {{baseUrl}}/api/observations/timeseries?dateFrom=2024-04-05&dateTo=2024-04-30&confidence=high
+
 ### Continue from the returned next cursor
 GET {{baseUrl}}/api/observations?afterAcquiredAt=2024-04-05T12:34:00Z&afterObservationId=100&pageSize=25
 
