@@ -85,7 +85,7 @@ public sealed record ObservationSearchRequest
     [FromQuery(Name = "type")]
     public string? Type { get; init; }
 
-    /// <summary>Number of results to return, from 1 to 500; defaults to 100.</summary>
+    /// <summary>Number of results to return per page; must be positive and defaults to 100.</summary>
     [FromQuery(Name = "pageSize")]
     public int? PageSize { get; init; } = 100;
 

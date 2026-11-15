@@ -31,7 +31,7 @@ public sealed class ObservationSearchService(FireDataContext context) : IObserva
             .OrderBy(observation => observation.AcquiredAtUtcUs)
             .ThenBy(observation => observation.ObservationId);
 
-        var matches = new List<ObservationResponse>(pageSize + 1);
+        var matches = new List<ObservationResponse>();
         await foreach (var observation in query.AsAsyncEnumerable()
                            .WithCancellation(cancellationToken))
         {

@@ -315,8 +315,10 @@ ConnectionStrings__FireData='Data Source=/absolute/path/fire-observations.sqlite
 - `type`: `VEGETATION_FIRE`, `ACTIVE_VOLCANO`,
   `OTHER_STATIC_LAND_SOURCE`, or `OFFSHORE` (MODIS only; VIIRS rows do not
   match).
-- `pageSize`: 1–500 (default 100). Results are ordered by acquisition time
-  then observation ID. Pass both `afterAcquiredAt` and
+- `pageSize`: positive integer per-request page size (default 100; no fixed
+  upper limit). Very large pages increase response size and browser memory.
+  Results are ordered by acquisition time then observation ID. Pass both
+  `afterAcquiredAt` and
   `afterObservationId` from the returned `next` cursor to continue paging.
 
 Invalid combinations or out-of-range values return validation problem details.
@@ -355,10 +357,14 @@ in the image or Docker build context. It remains on the host. The UI queries
 `/api/observations` from the browser and plots MODIS and VIIRS results on a
 Leaflet/OpenStreetMap map. Filters include UTC dates and time-of-day, bounding
 box or radius area of interest, satellite, confidence, brightness, FRP, and
-MODIS hotspot type. Results are paged (up to 500 per request); loading the next
-page adds those detections to the map. Leaflet, fonts, and map tiles are served
-by public CDN/tile services, so an internet connection is required to show the
-map.
+MODIS hotspot type. Results are paged; loading the next page adds detections to
+the map. The per-request size is configurable and has no fixed upper limit.
+The browser also reapplies the active filters to
+returned observation pages before drawing markers. The time-series endpoint
+aggregates only after applying filters in SQLite; the browser reapplies the
+selected date bounds to the returned daily buckets. Leaflet, fonts, and map
+tiles are served by public CDN/tile services, so an internet connection is
+required to show the map.
 
 Below the map, the daily time-series chart uses the same filters and shows
 observation counts by UTC date. VIIRS counts are divided by a ratio of 5 by

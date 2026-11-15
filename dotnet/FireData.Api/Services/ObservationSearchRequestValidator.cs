@@ -22,9 +22,9 @@ internal static class ObservationSearchRequestValidator
     {
         var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
 
-        if (request.PageSize is < 1 or > 500)
+        if (request.PageSize is < 1)
         {
-            AddError(errors, nameof(request.PageSize), "pageSize must be between 1 and 500.");
+            AddError(errors, nameof(request.PageSize), "pageSize must be a positive integer.");
         }
 
         if (request.DateFrom > request.DateTo)

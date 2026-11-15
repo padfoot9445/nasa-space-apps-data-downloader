@@ -3,6 +3,9 @@
 ### Date, UTC time-of-day, confidence, satellite, brightness, and FRP filters
 GET {{baseUrl}}/api/observations?dateFrom=2024-04-05&dateTo=2024-04-06&timeOfDayFrom=18:00&timeOfDayTo=06:00&confidence=high&satellite=N20&brightnessMin=300&frpMin=1&pageSize=25
 
+### Request a page larger than the former 500-result ceiling
+GET {{baseUrl}}/api/observations?dateFrom=2024-04-05&dateTo=2024-04-06&pageSize=1000
+
 ### Bounding-box AOI (antimeridian crossing supported)
 GET {{baseUrl}}/api/observations?west=170&south=-20&east=-170&north=20&pageSize=25
 

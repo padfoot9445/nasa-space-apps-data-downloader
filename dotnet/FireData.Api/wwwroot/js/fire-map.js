@@ -29,15 +29,16 @@ export async function fetchObservations(url, append) {
             throw new Error("The observation map is not initialized.");
         }
 
+        const clientFilteredItems = applyObservationFilters(page.items, url);
         entry.observations = append
-            ? entry.observations.concat(page.items)
-            : page.items;
+            ? entry.observations.concat(clientFilteredItems)
+            : clientFilteredItems;
         renderObservations(entry);
         return {
             success: true,
             statusCode: response.status,
             body: "",
-            items: page.items.slice(0, 12),
+            items: clientFilteredItems.slice(0, 12),
             next: page.next,
             totalCount: entry.observations.length
         };
@@ -51,6 +52,100 @@ export async function fetchObservations(url, append) {
             totalCount: 0
         };
     }
+}
+
+export function applyObservationFilters(observations, url) {
+    const parameters = new URL(url, window.location.href).searchParams;
+    const dateFrom = parameters.get("dateFrom");
+    const dateTo = parameters.get("dateTo");
+    const acquiredFrom = parameters.has("acquiredFrom")
+        ? Date.parse(parameters.get("acquiredFrom"))
+        : null;
+    const acquiredTo = parameters.has("acquiredTo")
+        ? Date.parse(parameters.get("acquiredTo"))
+        : null;
+    const timeFrom = parseTimeOfDay(parameters.get("timeOfDayFrom"));
+    const timeTo = parseTimeOfDay(parameters.get("timeOfDayTo"));
+    const west = readNumber(parameters, "west");
+    const south = readNumber(parameters, "south");
+    const east = readNumber(parameters, "east");
+    const north = readNumber(parameters, "north");
+    const centerLatitude = readNumber(parameters, "centerLatitude");
+    const centerLongitude = readNumber(parameters, "centerLongitude");
+    const radiusMeters = readNumber(parameters, "radiusMeters");
+    const confidence = parameters.get("confidence")?.toLowerCase();
+    const satellite = parameters.get("satellite")?.toUpperCase();
+    const brightnessMin = readNumber(parameters, "brightnessMin");
+    const brightnessMax = readNumber(parameters, "brightnessMax");
+    const frpMin = readNumber(parameters, "frpMin");
+    const frpMax = readNumber(parameters, "frpMax");
+    const type = parameters.get("type")?.toUpperCase();
+
+    return observations.filter(observation => {
+        const acquiredAt = new Date(observation.acquiredAt);
+        if (!Number.isFinite(acquiredAt.getTime())) {
+            return false;
+        }
+
+        const acquiredTime = acquiredAt.getTime();
+        const utcDate = acquiredAt.toISOString().slice(0, 10);
+        if ((dateFrom && utcDate < dateFrom) ||
+            (dateTo && utcDate > dateTo) ||
+            (acquiredFrom !== null && acquiredTime < acquiredFrom) ||
+            (acquiredTo !== null && acquiredTime >= acquiredTo)) {
+            return false;
+        }
+
+        const timeOfDay =
+            acquiredAt.getUTCHours() * 3600 +
+            acquiredAt.getUTCMinutes() * 60 +
+            acquiredAt.getUTCSeconds() +
+            acquiredAt.getUTCMilliseconds() / 1000;
+        if (timeFrom !== null || timeTo !== null) {
+            const from = timeFrom ?? 0;
+            const to = timeTo ?? 86400;
+            const inTimeRange = from > to
+                ? timeOfDay >= from || timeOfDay < to
+                : timeOfDay >= from && timeOfDay < to;
+            if (!inTimeRange) {
+                return false;
+            }
+        }
+
+        if ((confidence && observation.confidence?.toLowerCase() !== confidence) ||
+            (satellite && observation.satellite?.toUpperCase() !== satellite) ||
+            (brightnessMin !== null && observation.brightness < brightnessMin) ||
+            (brightnessMax !== null && observation.brightness > brightnessMax) ||
+            (frpMin !== null && observation.fireRadiativePower < frpMin) ||
+            (frpMax !== null && observation.fireRadiativePower > frpMax) ||
+            (type && observation.type?.toUpperCase() !== type)) {
+            return false;
+        }
+
+        if (west !== null && south !== null && east !== null && north !== null) {
+            const inLongitudeRange = west <= east
+                ? observation.longitude >= west && observation.longitude <= east
+                : observation.longitude >= west || observation.longitude <= east;
+            if (!inLongitudeRange ||
+                observation.latitude < south ||
+                observation.latitude > north) {
+                return false;
+            }
+        }
+
+        if (centerLatitude !== null &&
+            centerLongitude !== null &&
+            radiusMeters !== null &&
+            distanceMeters(
+                centerLatitude,
+                centerLongitude,
+                observation.latitude,
+                observation.longitude) > radiusMeters) {
+            return false;
+        }
+
+        return true;
+    });
 }
 
 export async function fetchTimeSeries(elementId, url, scale) {
@@ -78,14 +173,20 @@ export async function fetchTimeSeries(elementId, url, scale) {
             throw new Error("The time-series API returned an invalid response.");
         }
 
-        const entry = { points, scale: normalizeScale(scale) };
+        const parameters = new URL(url, window.location.href).searchParams;
+        const dateFrom = parameters.get("dateFrom");
+        const dateTo = parameters.get("dateTo");
+        const clientFilteredPoints = points.filter(point =>
+            (!dateFrom || point.date >= dateFrom) &&
+            (!dateTo || point.date <= dateTo));
+        const entry = { points: clientFilteredPoints, scale: normalizeScale(scale) };
         timeSeriesByElement.set(elementId, entry);
         renderTimeSeries(elementId, entry);
         return {
             success: true,
             statusCode: response.status,
             body: "",
-            pointCount: points.length
+            pointCount: clientFilteredPoints.length
         };
     } catch (error) {
         return {
@@ -281,4 +382,29 @@ function appendSvgElement(svg, name, attributes, text = null) {
         element.textContent = text;
     }
     svg.append(element);
+}
+
+function readNumber(parameters, name) {
+    return parameters.has(name) ? Number(parameters.get(name)) : null;
+}
+
+function parseTimeOfDay(value) {
+    if (!value) {
+        return null;
+    }
+
+    const [hours, minutes, seconds = "0"] = value.split(":");
+    return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+}
+
+function distanceMeters(latitude1, longitude1, latitude2, longitude2) {
+    const radians = degrees => degrees * Math.PI / 180;
+    const latitudeDelta = radians(latitude2 - latitude1);
+    const longitudeDelta = radians(longitude2 - longitude1);
+    const haversine =
+        Math.sin(latitudeDelta / 2) ** 2 +
+        Math.cos(radians(latitude1)) *
+        Math.cos(radians(latitude2)) *
+        Math.sin(longitudeDelta / 2) ** 2;
+    return 6_371_008.8 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }

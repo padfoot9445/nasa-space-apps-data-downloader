@@ -135,12 +135,8 @@
                         </section>
 
                         <label class="page-size-label">
-                            <span>Results per page</span>
-                            <select @bind="_pageSize">
-                                <option value="100">100</option>
-                                <option value="250">250</option>
-                                <option value="500">500</option>
-                            </select>
+                            <span>Results per request</span>
+                            <input type="number" min="1" step="1" @bind="_pageSize" />
                         </label>
 
                         <button class="search-button" type="submit">
@@ -221,12 +217,12 @@
                     <div class="alert map-alert" role="status">@_mapError</div>
                 }
 
-                @if (_observations.Count > 0)
+                @if (_observations.Count > 0 || _nextPageUrl is not null)
                 {
                     <div class="results-toolbar">
                         <div>
                             <h3>Loaded detections <span class="count-pill">@_loadedObservationCount.ToString("N0", CultureInfo.InvariantCulture)</span></h3>
-                            <p>Page results are capped by the API; load another page to add more markers.</p>
+                            <p>Load another page to add more detections.</p>
                         </div>
                         @if (_nextPageUrl is not null)
                         {
@@ -235,26 +231,33 @@
                             </button>
                         }
                     </div>
-                    <div class="observation-list">
-                        @foreach (var observation in _observations.Take(12))
-                        {
-                            <article class="observation-row" @key="observation.ObservationId">
-                                <span class="observation-icon @(observation.Instrument == "MODIS" ? "modis-bg" : "viirs-bg")">@(observation.Instrument == "MODIS" ? "M" : "V")</span>
-                                <div class="observation-main">
-                                    <strong>@observation.Satellite <span class="muted">· @observation.Confidence confidence</span></strong>
-                                    <span>@observation.AcquiredAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture)</span>
-                                </div>
-                                <div class="observation-values">
-                                    <span>@observation.Brightness.ToString("0.#", CultureInfo.InvariantCulture) K</span>
-                                    <span>@observation.FireRadiativePower.ToString("0.##", CultureInfo.InvariantCulture) MW</span>
-                                </div>
-                            </article>
-                        }
-                        @if (_loadedObservationCount > _observations.Count)
-                        {
-                            <p class="list-note">Showing the first @_observations.Count.ToString("N0", CultureInfo.InvariantCulture) detections here; all @_loadedObservationCount.ToString("N0", CultureInfo.InvariantCulture) loaded detections are on the map.</p>
-                        }
-                    </div>
+                    @if (_observations.Count > 0)
+                    {
+                        <div class="observation-list">
+                            @foreach (var observation in _observations.Take(12))
+                            {
+                                <article class="observation-row" @key="observation.ObservationId">
+                                    <span class="observation-icon @(observation.Instrument == "MODIS" ? "modis-bg" : "viirs-bg")">@(observation.Instrument == "MODIS" ? "M" : "V")</span>
+                                    <div class="observation-main">
+                                        <strong>@observation.Satellite <span class="muted">· @observation.Confidence confidence</span></strong>
+                                        <span>@observation.AcquiredAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture)</span>
+                                    </div>
+                                    <div class="observation-values">
+                                        <span>@observation.Brightness.ToString("0.#", CultureInfo.InvariantCulture) K</span>
+                                        <span>@observation.FireRadiativePower.ToString("0.##", CultureInfo.InvariantCulture) MW</span>
+                                    </div>
+                                </article>
+                            }
+                            @if (_loadedObservationCount > _observations.Count)
+                            {
+                                <p class="list-note">Showing the first @_observations.Count.ToString("N0", CultureInfo.InvariantCulture) detections here; all @_loadedObservationCount.ToString("N0", CultureInfo.InvariantCulture) loaded detections are on the map.</p>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state"><span>◎</span><h3>No detections on this page</h3><p>Continue loading pages to check remaining API results.</p></div>
+                    }
                 }
                 else if (!_isLoading && string.IsNullOrWhiteSpace(_error) && _hasSearched)
                 {
@@ -291,7 +294,7 @@
     private string _satellite = "";
     private string _confidence = "";
     private string _type = "";
-    private string _pageSize = "250";
+    private int _pageSize = 250;
     private double? _west;
     private double? _south;
     private double? _east;
@@ -503,7 +506,7 @@
         AddNumber("brightnessMax", _brightnessMax);
         AddNumber("frpMin", _frpMin);
         AddNumber("frpMax", _frpMax);
-        values["pageSize"] = _pageSize;
+        values["pageSize"] = _pageSize.ToString(CultureInfo.InvariantCulture);
 
         if (_areaMode == "bounds")
         {
@@ -594,7 +597,7 @@
         _satellite = "";
         _confidence = "";
         _type = "";
-        _pageSize = "250";
+        _pageSize = 250;
         _west = _south = _east = _north = null;
         _centerLatitude = _centerLongitude = _radiusMeters = null;
         _brightnessMin = _brightnessMax = _frpMin = _frpMax = null;
