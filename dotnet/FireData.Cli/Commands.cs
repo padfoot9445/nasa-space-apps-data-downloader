@@ -1,9 +1,10 @@
 using System.Globalization;
 using System.Text.Json;
-using FireData.Cli;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+
+namespace FireData.Cli;
 
 internal static class Commands
 {
@@ -354,7 +355,6 @@ internal static class Commands
         await PersistClustersAsync(
             context,
             connection,
-            instrument,
             points,
             labels,
             corePoints,
@@ -492,7 +492,6 @@ internal static class Commands
     private static async Task PersistClustersAsync(
         FireDataContext context,
         SqliteConnection connection,
-        string instrument,
         IReadOnlyList<SpatialPoint> points,
         IReadOnlyList<int> labels,
         IReadOnlyList<bool> corePoints,
@@ -614,8 +613,18 @@ internal static class Commands
             "r.max_latitude >= $south",
             $"({string.Join(" OR ", longitudePredicates)})"
         };
-        AddSpatialFilter(options, clauses, parameters, "--instrument", "o.instrument", options.GetInstrument());
-        AddSpatialFilter(options, clauses, parameters, "--confidence-class", "o.confidence_class", options.GetConfidenceClass());
+        AddSpatialFilter(
+            clauses,
+            parameters,
+            "o.instrument",
+            "$instrument",
+            options.GetInstrument());
+        AddSpatialFilter(
+            clauses,
+            parameters,
+            "o.confidence_class",
+            "$confidence",
+            options.GetConfidenceClass());
 
         var from = options.GetUtcMicroseconds("--from");
         if (from is not null)
@@ -639,11 +648,10 @@ internal static class Commands
     }
 
     private static void AddSpatialFilter(
-        Arguments options,
         ICollection<string> clauses,
         ICollection<object> parameters,
-        string optionName,
         string columnName,
+        string parameterName,
         string? value)
     {
         if (value is null)
@@ -651,7 +659,6 @@ internal static class Commands
             return;
         }
 
-        var parameterName = optionName == "--instrument" ? "$instrument" : "$confidence";
         clauses.Add($"{columnName} = {parameterName}");
         parameters.Add(new SqliteParameter(parameterName, value));
     }
