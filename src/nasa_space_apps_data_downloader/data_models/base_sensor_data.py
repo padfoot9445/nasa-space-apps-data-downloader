@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import datetime
-from functools import cache, cached_property
+from functools import cached_property
 from typing import Any, NamedTuple, Self, cast
 
 
@@ -69,7 +69,7 @@ class CommonBaseSensorData(NamedTuple):
 
 
 @dataclass(frozen=True, slots=True)
-class BaseSensorData[TSatellite, TConfidence](ABC):
+class BaseSensorData[TSatellite = Any, TConfidence = Any](ABC):
     coordinate: Coordinate
 
     @property

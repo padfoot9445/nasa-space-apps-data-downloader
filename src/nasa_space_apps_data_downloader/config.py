@@ -2,6 +2,7 @@ from functools import cache, cached_property
 from pathlib import Path
 from typing import Self
 
+
 lazy from .data_models.schema import Schema
 lazy from .data_models import SensorType
 
@@ -62,3 +63,5 @@ class Config:
                     return None
 
     schema = _SchemaAccessor()
+
+    pickle_data_path = (PROJECT_ROOT / "../../data/data.pickle").resolve()

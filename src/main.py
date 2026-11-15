@@ -1,12 +1,8 @@
-from nasa_space_apps_data_downloader import validate_data_fits_schema, load_all_data
+from nasa_space_apps_data_downloader import validate_data_fits_schema
 from time import time
 import yappi
 
+from nasa_space_apps_data_downloader.data_models import DataAccessor
+
 if __name__ == "__main__":
-    yappi.set_clock_type("wall")
-    with yappi.run():
-        load_all_data.main()
-    print("Loaded")
-    x = yappi.get_func_stats()
-    x.save("yappi-out-3")
-    x.print_all()
+    DataAccessor.pickled_data()
