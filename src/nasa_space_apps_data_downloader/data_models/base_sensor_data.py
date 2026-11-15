@@ -52,9 +52,9 @@ class CommonBaseSensorData(NamedTuple):
     @classmethod
     def from_object(cls, object: dict[str, Any]) -> Self:
         args: dict[str, Any] = {
-            row.name: Config.schema.common[
-                row.name
-            ].type_specifier.try_into_correct_type(object[row.name])
+            row.name: Config.schema.common[row.name]
+            .type_specifier.try_into_correct_type(object[row.name])
+            .unwrap()
             for row in Config.schema.common.rows
             if row.name in cls.VALID_ROWS
         }
@@ -112,11 +112,11 @@ class BaseSensorData[TSatellite, TConfidence](ABC):
     def confidence(self) -> ViirsConfidence: ...
 
     @classmethod
-    def from_object(cls, object: dict[str, Any]):
-        match SensorType.from_string(object["instrument"]):
+    def try_from_object(cls, object: dict[str, Any]):
+        match SensorType.try_from_string(object["instrument"]):
             case SensorType.MODIS:
                 return ModisSensorData.from_object(object)
             case SensorType.VIIRS:
                 return ViirsSensorData.from_object(object)
             case x:
-                raise ValueError(f"unknown instrument {x}")
+                return None

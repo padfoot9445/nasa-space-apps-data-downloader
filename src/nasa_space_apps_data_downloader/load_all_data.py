@@ -1,3 +1,4 @@
+import gc
 from multiprocessing import Pool, dummy
 from pathlib import Path
 import sys
@@ -19,9 +20,10 @@ def main():
             .map(lambda x: Enumerable(stream_parse_buffer_by_characters(x)))
             .flat_map(
                 lambda x: p.imap_unordered(
-                    BaseSensorData.from_object, x, chunksize=100_000 // 16
+                    BaseSensorData.try_from_object, x, chunksize=100_000 // 16
                 )
             )
+            .where(lambda x: x is not None)
             .to_list()
         )
     print(f"Loaded all data, size = {len(x)}!")

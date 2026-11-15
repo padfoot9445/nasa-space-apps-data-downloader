@@ -16,9 +16,9 @@ class ModisSatellite(StrEnum):
     @classmethod
     def from_short_str_enum(cls, string: str):
         match string.upper():
-            case "A":
+            case "A" | "AQUA":
                 return cls.AQUA
-            case "T":
+            case "T" | "TERRA":
                 return cls.TERRA
             case _:
                 raise ValueError(
