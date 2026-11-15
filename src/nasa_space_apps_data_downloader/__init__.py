@@ -1,6 +1,5 @@
-from pathlib import Path
-lazy from .data_models.schema.json_data_schema_validator import main as validator_main
+from .data_models import validate_data_fits_schema
 
 
 def main() -> None:
-    validator_main()
+    validate_data_fits_schema()
