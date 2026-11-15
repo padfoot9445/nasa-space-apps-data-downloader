@@ -63,6 +63,7 @@ dependencies = [
     { name = "numpy" },
     { name = "python-linq" },
     { name = "rustshed" },
+    { name = "yappi" },
 ]
 
 [package.dev-dependencies]
@@ -75,6 +76,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.5.4" },
     { name = "python-linq", git = "https://github.com/padfoot9445/python-linq.git" },
     { name = "rustshed", specifier = ">=0.5.0" },
+    { name = "yappi", specifier = ">=1.7.6" },
 ]
 
 [package.metadata.requires-dev]
@@ -197,3 +199,9 @@ sdist = { url = "https://files.pythonhosted.org/packages/76/63/b262eb6219e6a175c
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/44/97759d5a1d604aab464f4f90f0f21cc9c801f66fda175616505a14ce50dd/rustshed-0.5.0-py3-none-any.whl", hash = "sha256:90545bc8a32fc46cbe93cdddc659c1b51cca0eba65863c90dbc31e0fdd1012c6", size = 10955, upload-time = "2022-12-22T18:37:54.105Z" },
 ]
+
+[[package]]
+name = "yappi"
+version = "1.7.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9f/47/f7ec7744dff1104560d6276f951a8182f5b805e8d86ece591aebd0512845/yappi-1.7.6.tar.gz", hash = "sha256:c94281936af77c00c6ac2306a0e7f85a67e354d717120df85fcc5dfb9243d4dd", size = 62639, upload-time = "2026-03-17T22:31:40.928Z" }
