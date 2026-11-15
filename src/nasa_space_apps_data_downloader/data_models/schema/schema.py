@@ -25,9 +25,9 @@ class Schema:
         )
 
     @cache
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> SchemaRow:
         try:
-            Enumerable(self.rows).where(lambda x: x.name == key).single()
+            return Enumerable(self.rows).where(lambda x: x.name == key).single()
         except TakeEnumerableException as e:
             raise ValueError(
                 f"{key} was not a valid property for schema {self.sensor}"
