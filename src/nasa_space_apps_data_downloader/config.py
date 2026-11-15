@@ -1,4 +1,4 @@
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from typing import Self
 
@@ -28,5 +28,31 @@ class Config:
             return Schema.from_path(
                 SensorType.VIIRS, PROJECT_ROOT / (r"config/schema/VIIRS")
             )
+
+        @cached_property
+        def ignored(self):
+            return frozenset(
+                (PROJECT_ROOT / r"config/IGNORED_SCHEMA").read_text().splitlines()
+            )
+
+        @cache
+        def __getitem__(self, key: str):
+            match key.upper():
+                case "MODIS":
+                    return self.modis
+                case "VIIRS":
+                    return self.viirs
+                case _:
+                    raise ValueError(f"Expected MODIS or VIIRS but got {key}")
+
+        @cache
+        def get(self, key: str):
+            if key in self.ignored:
+                return None
+            else:
+                try:
+                    return self[key]
+                except ValueError:
+                    return None
 
     schema = _SchemaAccessor()
