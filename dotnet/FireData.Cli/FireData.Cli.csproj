@@ -9,5 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <Content Include="../../sqlite/schema.sql" Link="schema.sql" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../sqlite/migrations/002_processing.sql" Link="002_processing.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

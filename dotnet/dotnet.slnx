@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="FireData.Api/FireData.Api.csproj" />
   <Project Path="FireData.Cli/FireData.Cli.csproj" />
+  <Project Path="FireData.Cli.Tests/FireData.Cli.Tests.csproj" />
 </Solution>

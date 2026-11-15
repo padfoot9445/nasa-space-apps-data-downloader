@@ -34,6 +34,13 @@ internal static class Commands
                 return 0;
             }
 
+            if (command == "migrate")
+            {
+                await MigrateAsync(databasePath);
+                Console.WriteLine($"Migrated {databasePath} to schema version 2");
+                return 0;
+            }
+
             if (!File.Exists(databasePath))
             {
                 throw new FileNotFoundException(
@@ -50,12 +57,14 @@ internal static class Commands
                 "radius" => await RadiusAsync(context, options),
                 "stats" => await StatsAsync(context, options),
                 "cluster" => await ClusterAsync(context, options),
+                "process" => await ProcessingCommands.RunAsync(databasePath, options),
+                "calibrate" => await ProcessingCommands.CalibrateAsync(databasePath, options),
                 _ => throw new ArgumentException($"Unknown command: {command}")
             };
         }
         catch (Exception error) when (
             error is ArgumentException or FormatException or InvalidOperationException
-                or IOException or SqliteException or DbUpdateException)
+                or IOException or SqliteException or DbUpdateException or OverflowException)
         {
             Console.Error.WriteLine($"Error: {error.Message}");
             return 2;
@@ -85,16 +94,56 @@ internal static class Commands
         {
             versionCommand.CommandText = "PRAGMA user_version";
             var version = Convert.ToInt32(await versionCommand.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
-            if (version > 1)
+            if (version > 2)
             {
                 throw new InvalidOperationException(
-                    $"Database schema version {version} is newer than this CLI supports (1).");
+                    $"Database schema version {version} is newer than this CLI supports (2).");
             }
         }
 
         await using var command = connection.CreateCommand();
         command.CommandText = await File.ReadAllTextAsync(schemaPath);
         await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task MigrateAsync(string databasePath)
+    {
+        if (!File.Exists(databasePath))
+        {
+            throw new FileNotFoundException(
+                $"Database not found: {databasePath}. Use init to create a database.");
+        }
+
+        await using var connection = new SqliteConnection($"Data Source={databasePath};Foreign Keys=True");
+        await connection.OpenAsync();
+        await using var versionCommand = connection.CreateCommand();
+        versionCommand.CommandText = "PRAGMA user_version";
+        var version = Convert.ToInt32(
+            await versionCommand.ExecuteScalarAsync(),
+            CultureInfo.InvariantCulture);
+        if (version == 2)
+        {
+            return;
+        }
+
+        if (version != 1)
+        {
+            throw new InvalidOperationException(
+                $"Cannot migrate schema version {version}; expected version 1.");
+        }
+
+        var migrationPath = Path.Combine(AppContext.BaseDirectory, "002_processing.sql");
+        if (!File.Exists(migrationPath))
+        {
+            throw new FileNotFoundException($"Schema migration is missing: {migrationPath}");
+        }
+
+        await using var transaction = connection.BeginTransaction();
+        await using var migration = connection.CreateCommand();
+        migration.Transaction = transaction;
+        migration.CommandText = await File.ReadAllTextAsync(migrationPath);
+        await migration.ExecuteNonQueryAsync();
+        await transaction.CommitAsync();
     }
 
     private static async Task ValidateDatabaseAsync(FireDataContext context)
@@ -104,10 +153,10 @@ internal static class Commands
         await using var command = connection.CreateCommand();
         command.CommandText = "PRAGMA user_version";
         var version = Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
-        if (version != 1)
+        if (version != 2)
         {
             throw new InvalidOperationException(
-                $"Unsupported or missing database schema version {version}; expected 1.");
+                $"Unsupported or missing database schema version {version}; expected 2. Run the migrate command.");
         }
     }
 
@@ -716,6 +765,7 @@ internal static class Commands
 
             Commands:
               init     --database PATH
+              migrate  --database PATH
               query    --database PATH [--instrument MODIS|VIIRS|all]
                        [--from UTC] [--to UTC] [--confidence-class low|nominal|high]
                        [--bbox west,south,east,north] [--order-by time|frp|latitude|longitude]
@@ -726,6 +776,10 @@ internal static class Commands
               cluster  --database PATH --instrument MODIS|VIIRS
                        --epsilon-m METERS --min-points N [--from UTC] [--to UTC]
                        [--confidence-class low|nominal|high]
+              process  --database PATH [--grid-degrees DEG] [--epsilon-m METERS]
+                       [--time-scale-m-per-day METERS] [--min-points N]
+                       [--confidence-class low|nominal|high] [--from UTC] [--to UTC]
+              calibrate --database PATH --run-id N --count-method ratio|poisson
 
             Spatial radius uses a spherical Haversine distance. R*Tree is only the
             conservative candidate index; the returned radius/bbox rows are exact-
@@ -733,6 +787,10 @@ internal static class Commands
             time because no cross-sensor sensitivity harmonization has been defined.
             Results and parameters are persisted in preprocessing_runs and
             cluster_memberships; noise is represented by a null cluster_id.
+            process performs non-destructive cleaning, per-sensor spatiotemporal
+            clustering, UTC daily-cell aggregation, and a separately labeled
+            neighboring-detection presence heuristic. calibrate fits and evaluates
+            a VIIRS-reference model using year-blocked holdouts.
             """);
     }
 

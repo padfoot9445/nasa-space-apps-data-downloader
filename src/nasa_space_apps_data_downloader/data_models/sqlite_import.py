@@ -14,8 +14,8 @@ from .load_all_data import DataAccessor
 from .modis import ModisSensorData
 from .viirs import ViirsSensorData
 
-SCHEMA_VERSION = 1
-IMPORTER_VERSION = "1"
+SCHEMA_VERSION = 2
+IMPORTER_VERSION = "2"
 BATCH_SIZE = 10_000
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 INSERT_OBSERVATION = """

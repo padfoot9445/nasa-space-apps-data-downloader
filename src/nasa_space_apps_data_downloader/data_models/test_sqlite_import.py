@@ -84,6 +84,10 @@ def test_import_creates_typed_rows_rtree_and_generated_confidence(tmp_path):
         source = connection.execute(
             "SELECT record_count, accepted_count FROM source_files"
         ).fetchone()
+        schema_version = connection.execute("PRAGMA user_version").fetchone()[0]
+        source_schema_version = connection.execute(
+            "SELECT schema_version FROM source_files"
+        ).fetchone()[0]
 
     assert rows == [
         ("MODIS", "TERRA", 67, "VEGETATION_FIRE", None, "High"),
@@ -92,6 +96,8 @@ def test_import_creates_typed_rows_rtree_and_generated_confidence(tmp_path):
     ]
     assert rtree_count == 3
     assert source == (3, 3)
+    assert schema_version == 2
+    assert source_schema_version == 2
 
     with sqlite3.connect(database_path) as connection:
         observation_id = connection.execute(
