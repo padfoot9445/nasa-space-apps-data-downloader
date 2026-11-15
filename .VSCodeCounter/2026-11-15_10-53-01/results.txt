@@ -1,0 +1,72 @@
+Date : 2026-11-15 10:53:01
+Directory : /home/padfoot9445/Coding/nasa-space-apps-data-downloader
+Total : 32 files,  2544 codes, 16 comments, 415 blanks, all 2975 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| C#       |          6 |      1,081 |          0 |        135 |      1,216 |
+| Python   |         21 |      1,052 |         16 |        226 |      1,294 |
+| TOML     |          2 |        213 |          0 |         26 |        239 |
+| SQLite   |          1 |        140 |          0 |         12 |        152 |
+| Markdown |          1 |         46 |          0 |         14 |         60 |
+| MSBuild  |          1 |         12 |          0 |          2 |         14 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++-----------------------------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                                                          | files      | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                                                             |         32 |      2,544 |         16 |        415 |      2,975 |
+| . (Files)                                                                                                                                     |          3 |        259 |          0 |         40 |        299 |
+| dotnet                                                                                                                                        |          7 |      1,093 |          0 |        137 |      1,230 |
+| dotnet/FireData.Cli                                                                                                                           |          7 |      1,093 |          0 |        137 |      1,230 |
+| sqlite                                                                                                                                        |          1 |        140 |          0 |         12 |        152 |
+| src                                                                                                                                           |         21 |      1,052 |         16 |        226 |      1,294 |
+| src (Files)                                                                                                                                   |          1 |         14 |          0 |          4 |         18 |
+| src/nasa_space_apps_data_downloader                                                                                                           |         20 |      1,038 |         16 |        222 |      1,276 |
+| src/nasa_space_apps_data_downloader (Files)                                                                                                   |          2 |         56 |          0 |         18 |         74 |
+| src/nasa_space_apps_data_downloader/data_models                                                                                               |         18 |        982 |         16 |        204 |      1,202 |
+| src/nasa_space_apps_data_downloader/data_models (Files)                                                                                       |         13 |        755 |         16 |        154 |        925 |
+| src/nasa_space_apps_data_downloader/data_models/schema                                                                                        |          5 |        227 |          0 |         50 |        277 |
++-----------------------------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-----------------------------------------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                                                                                      | language | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/README.md                                                                            | Markdown |         46 |          0 |         14 |         60 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Arguments.cs                                                     | C#       |        111 |          0 |         24 |        135 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Commands.cs                                                      | C#       |        661 |          0 |         73 |        734 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/FireData.Cli.csproj                                              | MSBuild  |         12 |          0 |          2 |         14 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/FireDataContext.cs                                               | C#       |        106 |          0 |          7 |        113 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Models.cs                                                        | C#       |        128 |          0 |         17 |        145 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Program.cs                                                       | C#       |          5 |          0 |          2 |          7 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/SpatialMath.cs                                                   | C#       |         70 |          0 |         12 |         82 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/pyproject.toml                                                                       | TOML     |         26 |          0 |          5 |         31 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/sqlite/schema.sql                                                                    | SQLite   |        140 |          0 |         12 |        152 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/main.py                                                                          | Python   |         14 |          0 |          4 |         18 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/__init__.py                                      | Python   |          3 |          0 |          3 |          6 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/config.py                                        | Python   |         53 |          0 |         15 |         68 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/__init__.py                          | Python   |         24 |          0 |          2 |         26 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/base_sensor_data.py                  | Python   |         98 |          0 |         25 |        123 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/coordinate.py                        | Python   |          5 |          0 |          3 |          8 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/day_night.py                         | Python   |          4 |          0 |          3 |          7 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/load_all_data.py                     | Python   |         62 |          0 |         12 |         74 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/modis.py                             | Python   |         69 |          1 |         17 |         87 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/__init__.py                   | Python   |         11 |          0 |          2 |         13 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/json_data_schema_validator.py | Python   |         65 |          0 |         15 |         80 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/schema.py                     | Python   |         38 |          0 |          9 |         47 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/schema_data_type.py           | Python   |         73 |          0 |         12 |         85 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/schema_row.py                 | Python   |         40 |          0 |         12 |         52 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/sensor_type.py                       | Python   |         15 |          0 |          4 |         19 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/sqlite_import.py                     | Python   |        203 |          5 |         29 |        237 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/streaming_json_parser.py             | Python   |         53 |          0 |          7 |         60 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/test_sqlite_import.py                | Python   |        112 |          9 |         20 |        141 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/test_streaming_json_parser.py        | Python   |         33 |          0 |         10 |         43 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/version_spec.py                      | Python   |         24 |          0 |          9 |         33 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/viirs.py                             | Python   |         53 |          1 |         13 |         67 |
+| /home/padfoot9445/Coding/nasa-space-apps-data-downloader/uv.lock                                                                              | TOML     |        187 |          0 |         21 |        208 |
+| Total                                                                                                                                         |          |      2,544 |         16 |        415 |      2,975 |
++-----------------------------------------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
