@@ -1,3 +1,16 @@
+To run: 
+- clone the repo
+- download the database from https://drive.google.com/file/d/1LElbI0yAlmfflrXX37FelS5JiKfjwXfG/view?usp=sharing and put it at project-root/data/fire-observations.sqlite
+- run the appropriate script from scripts/
+
+
+Our project efficiently combines constant MODIS and VIIRS hotspot data over the last 26 years to give fire managers an effective platform to visualise fire spread. By combining geolocational data from both modern and historical fires, our project aims to improve accuracy and speed of hotspot identification, as well as giving the users the ability to easily analyse patterns via a dedicated analysis section.
+
+Our project additionally implements OpenStreetMap coverage to provide a live, dedicated interface with an intutitive feel similar to modern mapping applications. With this data fusion, we hope that curious minds to professional fire superforecasters are able to use this application with no prior training.
+
+We have implemented a dedicated analysis section, which graphically allows for trend analysis, directly inside of the platform. With this, there is no need to export data and write a script to compare simple patterns, saving time.
+
+
 # Fire observations: SQLite and C# CLI
 
 The Python package currently loads typed MODIS and VIIRS models into a pickle.

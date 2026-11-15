@@ -1,0 +1,73 @@
+"filename", "language", "Docker", "Markdown", "Python", "TOML", "JavaScript", "C#", "PostCSS", "MSBuild", "ASP.NET Razor", "HTTP", "SQLite", "YAML", "Rust", "JSON", "PowerShell", "Ignore", "Shell Script", "comment", "blank", "total"
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/.dockerignore", "Ignore", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 1, 16
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/Dockerfile", "Docker", 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 27
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/README.md", "Markdown", 0, 332, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 67, 399
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/compose.yaml", "YAML", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 0, 1, 23
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Components/App.razor", "ASP.NET Razor", 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 19
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Components/Pages/Home.razor", "ASP.NET Razor", 0, 0, 0, 0, 0, 0, 0, 0, 661, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, 713
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Components/Routes.razor", "ASP.NET Razor", 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Components/_Imports.razor", "ASP.NET Razor", 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 12
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Endpoints/ObservationEndpoints.cs", "C#", 0, 0, 0, 0, 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 9, 73
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/FireData.Api.csproj", "MSBuild", 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 14
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/FireData.Api.http", "HTTP", 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 8, 9, 26
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Models/ObservationSearchRequest.cs", "C#", 0, 0, 0, 0, 0, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 43, 28, 141
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Models/ObservationTimeSeriesPoint.cs", "C#", 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 11
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Program.cs", "C#", 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 40
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Properties/launchSettings.json", "JSON", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 1, 14
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Services/IObservationSearchService.cs", "C#", 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 3, 16
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Services/IObservationTimeSeriesService.cs", "C#", 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 13
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Services/ObservationSearchRequestValidator.cs", "C#", 0, 0, 0, 0, 0, 225, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 37, 262
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Services/ObservationSearchService.cs", "C#", 0, 0, 0, 0, 0, 260, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 34, 297
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/Services/ObservationTimeSeriesService.cs", "C#", 0, 0, 0, 0, 0, 87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 11, 100
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/wwwroot/css/fire-map.css", "PostCSS", 0, 0, 0, 0, 0, 0, 159, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 166
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Api/wwwroot/js/fire-map.js", "JavaScript", 0, 0, 0, 0, 369, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 411
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli.Tests/FireData.Cli.Tests.csproj", "MSBuild", 0, 0, 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 25
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli.Tests/ProcessingPipelineTests.cs", "C#", 0, 0, 0, 0, 0, 404, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 430
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Arguments.cs", "C#", 0, 0, 0, 0, 0, 111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 135
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/AssemblyInfo.cs", "C#", 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/CalibrationCommands.cs", "C#", 0, 0, 0, 0, 0, 415, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 448
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/CalibrationStrategies.cs", "C#", 0, 0, 0, 0, 0, 205, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 237
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Commands.cs", "C#", 0, 0, 0, 0, 0, 719, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 799
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/DatabaseDbscan.cs", "C#", 0, 0, 0, 0, 0, 454, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 487
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/FireData.Cli.csproj", "MSBuild", 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 15
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/FireDataContext.cs", "C#", 0, 0, 0, 0, 0, 106, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 113
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Models.cs", "C#", 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 145
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/ProcessingCommands.cs", "C#", 0, 0, 0, 0, 0, 626, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 676
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/Program.cs", "C#", 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/dotnet/FireData.Cli/SpatialMath.cs", "C#", 0, 0, 0, 0, 0, 70, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 82
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/pyproject.toml", "TOML", 0, 0, 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 31
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/rust/Cargo.lock", "TOML", 0, 0, 0, 692, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 91, 785
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/rust/Cargo.toml", "TOML", 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 19
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/rust/src/calibration.rs", "Rust", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 533, 0, 0, 0, 0, 0, 30, 563
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/rust/src/database.rs", "Rust", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 6, 28
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/rust/src/main.rs", "Rust", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 106, 0, 0, 0, 0, 0, 10, 116
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/rust/src/processing.rs", "Rust", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1302, 0, 0, 0, 0, 0, 63, 1365
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/rust/src/spatial.rs", "Rust", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 138, 0, 0, 0, 0, 0, 18, 156
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/scripts/run-firewatch-local.sh", "Shell Script", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 99, 1, 15, 115
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/scripts/run-firewatch.ps1", "PowerShell", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 0, 0, 0, 10, 73
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/scripts/run-firewatch.sh", "Shell Script", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 97, 1, 14, 112
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/sqlite/migrations/002_processing.sql", "SQLite", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 105, 0, 0, 0, 0, 0, 0, 0, 9, 114
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/sqlite/schema.sql", "SQLite", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 244, 0, 0, 0, 0, 0, 0, 0, 22, 266
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/main.py", "Python", 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 18
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/__init__.py", "Python", 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/config.py", "Python", 0, 0, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 68
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/__init__.py", "Python", 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 26
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/base_sensor_data.py", "Python", 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 123
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/coordinate.py", "Python", 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 8
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/day_night.py", "Python", 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 7
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/load_all_data.py", "Python", 0, 0, 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 74
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/modis.py", "Python", 0, 0, 69, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 87
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/__init__.py", "Python", 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/json_data_schema_validator.py", "Python", 0, 0, 65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 80
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/schema.py", "Python", 0, 0, 38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 47
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/schema_data_type.py", "Python", 0, 0, 73, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 85
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/schema/schema_row.py", "Python", 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 52
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/sensor_type.py", "Python", 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 19
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/sqlite_import.py", "Python", 0, 0, 203, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 29, 237
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/streaming_json_parser.py", "Python", 0, 0, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 60
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/test_sqlite_import.py", "Python", 0, 0, 118, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 20, 147
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/test_streaming_json_parser.py", "Python", 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 43
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/version_spec.py", "Python", 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 33
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/src/nasa_space_apps_data_downloader/data_models/viirs.py", "Python", 0, 0, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13, 67
+"/home/padfoot9445/Coding/nasa-space-apps-data-downloader/uv.lock", "TOML", 0, 0, 0, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 208
+"Total", "-", 21, 332, 1058, 921, 369, 3998, 159, 47, 702, 9, 349, 22, 2101, 13, 63, 15, 196, 91, 1194, 11660
