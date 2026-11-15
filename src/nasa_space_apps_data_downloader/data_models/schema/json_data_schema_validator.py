@@ -24,16 +24,13 @@ def validate_row_name(row: SchemaRow, object: dict[Any, Any]):
 
 
 def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
+
     try:
-        match object["instrument"]:
-            case "VIIRS":
-                schema = Config.schema.viirs
-            case "MODIS":
-                schema = Config.schema.modis
-            case "OLI-2" | "SNPP" | "OLI":
-                return Enumerable[str].empty()
-            case x:
-                return Enumerable([f"Unknown instrument specifier {x}"])
+        if object["instrument"] in Config.schema.ignored:
+            return Enumerable[str].empty()
+        schema = Config.schema.get(object["instrument"])
+        if schema is None:
+            return Enumerable([f"Unknown instrument specifier {object["instrument"]}"])
     except KeyError:
         return Enumerable([f"Could not access 'instrument' key on object {object}"])
 
