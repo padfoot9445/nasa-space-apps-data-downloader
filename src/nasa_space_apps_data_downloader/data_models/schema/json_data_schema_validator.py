@@ -3,9 +3,9 @@ import sys
 from typing import Any, Iterable
 from python_linq import Enumerable
 from pathlib import Path
-from .schema import Schema
 from .schema_row import SchemaRow
 from ..streaming_json_parser import stream_parse_buffer_by_characters
+from ...config import Config
 
 
 def validate_row_name(row: SchemaRow, object: dict[Any, Any]):
@@ -27,9 +27,9 @@ def validate_object(object: dict[Any, Any]) -> Enumerable[str]:
     try:
         match object["instrument"]:
             case "VIIRS":
-                schema = Schema.schemas.viirs
+                schema = Config.schema.viirs
             case "MODIS":
-                schema = Schema.schemas.modis
+                schema = Config.schema.modis
             case "OLI-2" | "SNPP" | "OLI":
                 return Enumerable[str].empty()
             case x:

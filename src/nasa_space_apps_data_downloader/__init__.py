@@ -1,4 +1,4 @@
-from .data_models import validate_data_fits_schema
+from .data_models.schema import validate_data_fits_schema
 
 
 def main() -> None:
